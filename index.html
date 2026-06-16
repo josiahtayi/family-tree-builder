@@ -232,6 +232,32 @@
             border-top: 1px solid #ddd;
             margin: 20px 0;
         }
+
+        .canvas-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .canvas-header h2 {
+            margin-bottom: 0;
+        }
+
+        .download-btn {
+            background: #0066cc;
+            color: white;
+            border: none;
+            font-size: 13px;
+        }
+
+        .download-btn:hover {
+            background: #0052a3;
+        }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -294,7 +320,10 @@
         </div>
         
         <div class="canvas">
-            <h2>Family Tree Preview</h2>
+            <div class="canvas-header">
+                <h2>Family Tree Preview</h2>
+                <button type="button" onclick="downloadTreeImage()" id="downloadBtn" class="download-btn hidden">⬇ Download Image</button>
+            </div>
             <div id="treeContainer"></div>
         </div>
     </div>
@@ -478,11 +507,43 @@
             });
         }
 
+        function downloadTreeImage() {
+            const svg = document.querySelector('#treeContainer svg');
+            if (!svg) return;
+
+            const width = 1000;
+            const height = 700;
+
+            const serialized = new XMLSerializer().serializeToString(svg);
+            const blob = new Blob([serialized], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+                URL.revokeObjectURL(url);
+
+                const link = document.createElement('a');
+                link.download = 'family-tree.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            };
+            img.src = url;
+        }
+
         function renderTree() {
             const container = document.getElementById('treeContainer');
-            
+            const downloadBtn = document.getElementById('downloadBtn');
+
             if (family.length === 0) {
                 container.innerHTML = '<div class="empty-state">Add family members to see the tree</div>';
+                downloadBtn.classList.add('hidden');
                 return;
             }
 
@@ -526,6 +587,7 @@
             svg += '<defs><clipPath id="photoClip"><circle cx="0" cy="0" r="25"/></clipPath></defs>';
             svg += '</svg>';
             container.innerHTML = svg;
+            downloadBtn.classList.remove('hidden');
         }
 
         renderUI();
