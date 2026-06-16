@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Tree Builder</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .container { 
+            display: flex; 
+            height: 100vh; 
+            gap: 20px; 
+            padding: 20px; 
+        }
+        
+        .sidebar { 
+            width: 380px; 
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .canvas { 
+            flex: 1; 
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            overflow: auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        h2 { 
+            font-size: 18px; 
+            font-weight: 600; 
+            margin-bottom: 16px; 
+            color: #1a1a1a; 
+        }
+        
+        h3 { 
+            font-size: 13px; 
+            font-weight: 600; 
+            margin: 12px 0 8px; 
+            color: #333; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-group { margin-bottom: 12px; }
+        
+        label { 
+            display: block; 
+            font-size: 12px; 
+            font-weight: 500; 
+            margin-bottom: 4px; 
+            color: #666; 
+        }
+        
+        input, select { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            background: #fafafa;
+            color: #333;
+        }
+        
+        input:focus, select:focus { 
+            outline: none; 
+            border-color: #0066cc;
+            background: white;
+        }
+        
+        button { 
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+            color: #333;
+        }
+        
+        button:hover { 
+            background: #f5f5f5;
+            border-color: #999;
+        }
+        
+        button.danger { 
+            border-color: #e24b4a; 
+            color: #e24b4a; 
+        }
+        
+        button.danger:hover { 
+            background: rgba(226, 75, 74, 0.1); 
+        }
+        
+        button.primary { 
+            background: #0066cc; 
+            color: white; 
+            border: none; 
+        }
+        
+        button.primary:hover { 
+            background: #0052a3;
+        }
+        
+        .photo-section {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+        
+        .photo-preview {
+            width: 100%;
+            height: 140px;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-bottom: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .photo-upload input[type="file"] {
+            display: none;
+        }
+        
+        .photo-upload label {
+            display: block;
+            margin: 0;
+            padding: 8px 12px;
+            background: #0066cc;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .photo-upload label:hover {
+            background: #0052a3;
+        }
+        
+        .person-item {
+            background: #fafafa;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .person-item:hover { 
+            border-color: #999;
+            background: white;
+        }
+        
+        .person-item.selected { 
+            border-color: #0066cc; 
+            background: #f0f7ff; 
+        }
+        
+        .person-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #0066cc;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 13px;
+            flex-shrink: 0;
+            object-fit: cover;
+        }
+        
+        .person-info { 
+            flex: 1; 
+            min-width: 0; 
+        }
+        
+        .person-name { 
+            font-weight: 500; 
+            font-size: 13px; 
+            color: #1a1a1a; 
+        }
+        
+        .person-role { 
+            font-size: 11px; 
+            color: #999; 
+        }
+        
+        .button-group { 
+            display: flex; 
+            gap: 8px; 
+            margin-top: 12px; 
+            flex-wrap: wrap; 
+        }
+        
+        svg { 
+            max-width: 100%; 
+            height: auto; 
+        }
+        
+        .empty-state { 
+            color: #999; 
+            font-size: 13px; 
+            text-align: center; 
+            padding: 40px 20px; 
+        }
+
+        .divider {
+            border-top: 1px solid #ddd;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>👨‍👩‍👧‍👦 Family Tree Builder</h2>
+            
+            <div class="form-group">
+                <button class="primary" style="width: 100%; margin-bottom: 12px;" onclick="addPerson()">+ Add Family Member</button>
+            </div>
+            
+            <h3>Edit Member</h3>
+            <div id="editor" style="display: none;">
+                <div class="photo-section">
+                    <img id="editorPhotoPreview" class="photo-preview" style="display: none;">
+                    <div class="photo-upload">
+                        <label for="photoInput">📸 Upload Photo</label>
+                        <input type="file" id="photoInput" accept="image/*" onchange="handlePhotoUpload(event)">
+                    </div>
+                    <button class="danger" style="width: 100%; margin-top: 6px;" onclick="removePhoto()" id="removePhotoBtn" style="display: none;">Remove Photo</button>
+                </div>
+                
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="editorName" placeholder="e.g., John Smith">
+                </div>
+                
+                <div class="form-group">
+                    <label>Birth Year</label>
+                    <input type="number" id="editorBirth" placeholder="e.g., 1950">
+                </div>
+                
+                <div class="form-group">
+                    <label>Generation</label>
+                    <select id="editorGen">
+                        <option value="Grandparent">Grandparent</option>
+                        <option value="Parent">Parent</option>
+                        <option value="Child">Child</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Parent</label>
+                    <select id="editorParent">
+                        <option value="">None</option>
+                    </select>
+                </div>
+                
+                <div class="button-group">
+                    <button class="primary" onclick="savePerson()" style="flex: 1;">Save</button>
+                    <button class="danger" onclick="deletePerson()">Delete</button>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <h3>Family Members</h3>
+            <div id="membersList"></div>
+            <div id="emptyState" class="empty-state">No members yet. Add one to get started!</div>
+        </div>
+        
+        <div class="canvas">
+            <h2>Family Tree Preview</h2>
+            <div id="treeContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize family data from localStorage or use defaults
+        let family = JSON.parse(localStorage.getItem('familyTree')) || [
+            { id: 1, name: 'Robert', birth: 1945, generation: 'Grandparent', parent: null, photo: null },
+            { id: 2, name: 'Margaret', birth: 1947, generation: 'Grandparent', parent: null, photo: null },
+            { id: 3, name: 'James', birth: 1970, generation: 'Parent', parent: 1, photo: null },
+            { id: 4, name: 'Susan', birth: 1972, generation: 'Parent', parent: 1, photo: null },
+            { id: 5, name: 'David', birth: 1995, generation: 'Child', parent: 3, photo: null },
+            { id: 6, name: 'Emma', birth: 1997, generation: 'Child', parent: 3, photo: null }
+        ];
+        
+        let selectedId = null;
+        let nextId = Math.max(...family.map(p => p.id || 0)) + 1;
+
+        function saveFamilyTree() {
+            localStorage.setItem('familyTree', JSON.stringify(family));
+        }
+
+        function addPerson() {
+            family.push({ 
+                id: nextId, 
+                name: 'New Person', 
+                birth: new Date().getFullYear(), 
+                generation: 'Child', 
+                parent: null, 
+                photo: null 
+            });
+            nextId++;
+            selectedId = family[family.length - 1].id;
+            saveFamilyTree();
+            renderUI();
+        }
+
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const person = family.find(p => p.id === selectedId);
+                    if (person) {
+                        person.photo = e.target.result;
+                        saveFamilyTree();
+                        renderUI();
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removePhoto() {
+            const person = family.find(p => p.id === selectedId);
+            if (person) {
+                person.photo = null;
+                saveFamilyTree();
+                renderUI();
+            }
+        }
+
+        function savePerson() {
+            const person = family.find(p => p.id === selectedId);
+            if (person) {
+                person.name = document.getElementById('editorName').value || 'Unknown';
+                person.birth = parseInt(document.getElementById('editorBirth').value) || new Date().getFullYear();
+                person.generation = document.getElementById('editorGen').value;
+                person.parent = document.getElementById('editorParent').value ? parseInt(document.getElementById('editorParent').value) : null;
+            }
+            saveFamilyTree();
+            renderUI();
+        }
+
+        function deletePerson() {
+            if (confirm('Delete this person? This cannot be undone.')) {
+                family = family.filter(p => p.id !== selectedId);
+                family = family.filter(p => p.parent !== selectedId);
+                selectedId = null;
+                saveFamilyTree();
+                renderUI();
+            }
+        }
+
+        function selectPerson(id) {
+            selectedId = id;
+            const person = family.find(p => p.id === id);
+            if (person) {
+                document.getElementById('editorName').value = person.name;
+                document.getElementById('editorBirth').value = person.birth;
+                document.getElementById('editorGen').value = person.generation;
+                document.getElementById('editorParent').value = person.parent || '';
+                
+                const photoPreview = document.getElementById('editorPhotoPreview');
+                const removePhotoBtn = document.getElementById('removePhotoBtn');
+                if (person.photo) {
+                    photoPreview.src = person.photo;
+                    photoPreview.style.display = 'block';
+                    removePhotoBtn.style.display = 'block';
+                } else {
+                    photoPreview.style.display = 'none';
+                    removePhotoBtn.style.display = 'none';
+                }
+            }
+            renderUI();
+        }
+
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        }
+
+        function renderUI() {
+            renderEditor();
+            renderMembers();
+            renderTree();
+        }
+
+        function renderEditor() {
+            if (selectedId) {
+                document.getElementById('editor').style.display = 'block';
+                const parentSelect = document.getElementById('editorParent');
+                parentSelect.innerHTML = '<option value="">None</option>';
+                family.forEach(p => {
+                    if (p.id !== selectedId) {
+                        parentSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+                    }
+                });
+            } else {
+                document.getElementById('editor').style.display = 'none';
+            }
+        }
+
+        function renderMembers() {
+            const list = document.getElementById('membersList');
+            list.innerHTML = '';
+            const empty = document.getElementById('emptyState');
+            
+            if (family.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+
+            const grouped = { Grandparent: [], Parent: [], Child: [] };
+            family.forEach(p => grouped[p.generation].push(p));
+
+            ['Grandparent', 'Parent', 'Child'].forEach(gen => {
+                if (grouped[gen].length > 0) {
+                    const title = document.createElement('div');
+                    title.style.fontSize = '11px';
+                    title.style.fontWeight = '600';
+                    title.style.color = '#999';
+                    title.style.marginTop = '12px';
+                    title.style.marginBottom = '6px';
+                    title.style.textTransform = 'uppercase';
+                    title.style.letterSpacing = '0.5px';
+                    title.textContent = gen + 's';
+                    list.appendChild(title);
+
+                    grouped[gen].forEach(p => {
+                        const item = document.createElement('div');
+                        item.className = 'person-item' + (selectedId === p.id ? ' selected' : '');
+                        item.onclick = () => selectPerson(p.id);
+                        
+                        let avatarHTML = '';
+                        if (p.photo) {
+                            avatarHTML = `<img src="${p.photo}" class="person-avatar" style="width: 40px; height: 40px; border-radius: 50%;">`;
+                        } else {
+                            avatarHTML = `<div class="person-avatar">${getInitials(p.name)}</div>`;
+                        }
+                        
+                        item.innerHTML = avatarHTML + `
+                            <div class="person-info">
+                                <div class="person-name">${p.name}</div>
+                                <div class="person-role">b. ${p.birth}</div>
+                            </div>
+                        `;
+                        list.appendChild(item);
+                    });
+                }
+            });
+        }
+
+        function renderTree() {
+            const container = document.getElementById('treeContainer');
+            
+            if (family.length === 0) {
+                container.innerHTML = '<div class="empty-state">Add family members to see the tree</div>';
+                return;
+            }
+
+            const generations = { Grandparent: [], Parent: [], Child: [] };
+            family.forEach(p => generations[p.generation].push(p));
+
+            let svg = '<svg width="100%" viewBox="0 0 1000 700" style="border: 1px solid #ddd; border-radius: 8px; background: white;">';
+            
+            svg += '<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#999" stroke-width="1.5" stroke-linecap="round"/></marker></defs>';
+
+            let yPos = 40;
+            const maxPerGen = Math.max(generations.Grandparent.length, generations.Parent.length, generations.Child.length);
+            const xSpacing = 1000 / (maxPerGen + 1);
+
+            ['Grandparent', 'Parent', 'Child'].forEach(gen => {
+                svg += `<text x="20" y="${yPos + 30}" font-size="12" font-weight="600" fill="#999">${gen}s</text>`;
+
+                const people = generations[gen];
+                people.forEach((p, i) => {
+                    const x = (i + 1) * xSpacing;
+                    
+                    // Box
+                    svg += `<rect x="${x - 55}" y="${yPos}" width="110" height="80" rx="8" fill="white" stroke="#ddd" stroke-width="1"/>`;
+                    
+                    // Photo or initials circle
+                    if (p.photo) {
+                        svg += `<image x="${x - 45}" y="${yPos + 5}" width="50" height="50" href="${p.photo}" clip-path="url(#photoClip)" preserveAspectRatio="xMidYMid slice"/>`;
+                    } else {
+                        svg += `<circle cx="${x - 20}" cy="${yPos + 30}" r="25" fill="#0066cc" stroke="#ddd" stroke-width="1"/>`;
+                        svg += `<text x="${x - 20}" y="${yPos + 35}" font-size="14" font-weight="600" text-anchor="middle" fill="white">${getInitials(p.name)}</text>`;
+                    }
+                    
+                    // Text
+                    svg += `<text x="${x}" y="${yPos + 62}" font-size="11" font-weight="500" text-anchor="middle" fill="#333">${p.name}</text>`;
+                    svg += `<text x="${x}" y="${yPos + 76}" font-size="9" text-anchor="middle" fill="#999">b. ${p.birth}</text>`;
+                });
+
+                yPos += 130;
+            });
+
+            svg += '<defs><clipPath id="photoClip"><circle cx="0" cy="0" r="25"/></clipPath></defs>';
+            svg += '</svg>';
+            container.innerHTML = svg;
+        }
+
+        renderUI();
+    </script>
+</body>
+</html>
