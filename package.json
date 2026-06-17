@@ -17,12 +17,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/family-tree-builder.git"
+    "url": "https://github.com/josiahtayi/family-tree-builder.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/family-tree-builder/issues"
+    "url": "https://github.com/josiahtayi/family-tree-builder/issues"
   },
-  "homepage": "https://github.com/yourusername/family-tree-builder#readme",
+  "homepage": "https://github.com/josiahtayi/family-tree-builder#readme",
   "dependencies": {
     "firebase": "^12.15.0"
   }
