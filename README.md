@@ -1,149 +1,81 @@
-# Family Tree Builder 👨‍👩‍👧‍👦
+# Family Tree 🌳
 
-An interactive, web-based family tree builder with photo support. Create, edit, and visualize your family relationships with an intuitive interface.
+An interactive, web-based family tree with photo support. The tree comes pre-loaded with the family (Selina's descendants — 75 people across 4 generations) and can be edited, searched, and backed up entirely in your browser. No server, no accounts, no dependencies.
 
 ## Features
 
-✨ **Interactive Family Tree**
-- Add, edit, and delete family members
-- Organize people by generation (Grandparents, Parents, Children)
-- Set parent-child relationships
-- Store birth years for each person
-
-📸 **Photo Support**
-- Upload photos for each family member
-- Photos display as circular avatars in the tree
-- Automatic initial generation if no photo
-
-💾 **Auto-Save**
-- All data saved to browser's local storage
-- Persists between sessions
-- No server required
-
-📊 **Visual Tree**
-- Real-time preview of family tree
-- Clean, organized layout
-- Color-coded by generation
-- Responsive design
+- **4-generation collapsible tree** — expand/collapse any branch
+- **Add, edit, delete** any member
+- **Spouses / partners** shown next to each person
+- **Deceased markers** (shown with a † symbol)
+- **Photos** — upload a picture for any member (shows as a circular avatar)
+- **Search** — type a name to jump to anyone in the tree
+- **Re-parent** anyone via the Parent dropdown (cycles are prevented automatically)
+- **Auto-save** to the browser's local storage
+- **Backup / restore** — download your data as `family-data.json` and re-import it later
 
 ## Getting Started
 
-### Option 1: Use Online (No Installation)
+### Run locally
+Just open `index.html` in any browser (double-click it). That's it.
 
-1. Clone this repository:
-```bash
-git clone https://github.com/yourusername/family-tree-builder.git
-cd family-tree-builder
+### Host free on GitHub Pages
+1. Push these files to a GitHub repo.
+2. Repo **Settings → Pages → Source → Deploy from a branch → `main` / root**.
+3. Your tree goes live at `https://YOURNAME.github.io/REPO/`.
+
+## How the data works
+
+The family is stored in two places:
+
+1. **Built into `index.html`** as the default tree (so it shows immediately, including on GitHub Pages).
+2. **`family-data.json`** — a clean, editable copy of the same data for version control.
+
+When you edit in the browser, changes are saved to **local storage** on that device. Local storage is per-browser and isn't committed to GitHub, so to make edits permanent / shareable:
+
+1. Click **Download data** in the app to get an updated `family-data.json`.
+2. Replace `family-data.json` in your repo and commit it.
+
+To restore that data on another device, open the app and click **Load data**.
+
+> **Photos** are also kept in local storage as embedded images. They are not written to `family-data.json`, so they live only in the browser where you added them. For permanent photo storage you'd want a hosted-image approach (a future enhancement).
+
+## Data format
+
+`family-data.json` is a flat list. Each person links to their parent by `parentId`:
+
+```json
+{ "id": "2.4", "name": "Gciniwe", "parentId": "1.0", "spouse": "Eliot", "spouseDeceased": true }
 ```
 
-2. Open `index.html` in your web browser:
-   - Double-click the file, or
-   - Right-click → Open with → Browser
+| Field            | Meaning                                            |
+|------------------|----------------------------------------------------|
+| `id`             | Unique identifier (e.g. `2.4.1`)                   |
+| `name`           | Person's name                                      |
+| `parentId`       | `id` of their parent, or `null` for the top person |
+| `spouse`         | (optional) spouse / partner name                   |
+| `deceased`       | (optional) `true` if the person has passed away    |
+| `spouseDeceased` | (optional) `true` if the spouse has passed away    |
 
-### Option 2: GitHub Pages
-
-1. Push this repository to GitHub
-2. Go to repository Settings → Pages
-3. Set source to `main` branch
-4. Your tree will be live at: `https://yourusername.github.io/family-tree-builder/`
-
-## Usage
-
-### Adding Family Members
-
-1. Click **"+ Add Family Member"** button
-2. Fill in their information:
-   - Name
-   - Birth year
-   - Generation (Grandparent, Parent, or Child)
-   - Parent (who their parent is)
-3. Click **Save**
-
-### Adding Photos
-
-1. Select a family member from the list
-2. Click **"📸 Upload Photo"**
-3. Choose an image file from your computer
-4. The photo will appear as a circular avatar
-5. To remove: Click **"Remove Photo"**
-
-### Editing & Deleting
-
-- Click any person in the member list to edit them
-- Change their details and click **Save**
-- Click **Delete** to remove someone
-
-## Data Storage
-
-All your family data is stored in your browser's **local storage**. This means:
-- ✅ Data persists when you close and reopen the browser
-- ✅ No account or login required
-- ⚠️ Data is device-specific (not synced across devices)
-- ⚠️ Clearing browser data will delete the family tree
-
-### Backup Your Data
-
-To save your family tree:
-1. Export the data manually (if you add export feature)
-2. Or take screenshots of your completed tree
-3. Or save the browser's local storage
-
-## Technical Details
-
-- **No dependencies** - Pure HTML, CSS, JavaScript
-- **Single file** - Everything in `index.html`
-- **Client-side only** - No server required
-- **Modern browsers** - Works on Chrome, Firefox, Safari, Edge
-
-## Browser Support
-
-- ✅ Chrome/Chromium
-- ✅ Firefox
-- ✅ Safari
-- ✅ Edge
-- ✅ Mobile browsers (iOS Safari, Chrome Mobile)
-
-## Roadmap / Future Features
-
-- [ ] Export to PDF
-- [ ] Export/Import JSON data
-- [ ] Multiple tree projects
-- [ ] Cloud sync (Firebase/Supabase)
-- [ ] Death dates
-- [ ] Marriage relationships
-- [ ] Siblings view
-- [ ] Descendant count
-- [ ] Print-friendly layout
-- [ ] Dark mode
-
-## File Structure
+## File structure
 
 ```
-family-tree-builder/
-├── index.html          # Complete application
-├── README.md           # This file
+family-tree/
+├── index.html         # The whole app (open this)
+├── family-data.json   # Editable copy of the family data
+├── README.md          # This file
+├── package.json       # Project metadata
 └── .gitignore         # Git ignore rules
 ```
 
+## Roadmap
+
+- [ ] Export the tree as an image / PDF
+- [ ] Hosted photo storage (so pictures sync across devices)
+- [ ] Birth / death years and notes per person
+- [ ] Print-friendly layout
+- [ ] Dark mode
+
 ## License
 
-MIT License - Feel free to use, modify, and distribute
-
-## Contributing
-
-Contributions are welcome! Feel free to:
-- Report bugs
-- Suggest features
-- Submit pull requests
-- Improve documentation
-
-## Questions?
-
-If you have questions or run into issues:
-1. Check the [GitHub Issues](https://github.com/yourusername/family-tree-builder/issues)
-2. Create a new issue with details
-3. Include screenshots if helpful
-
----
-
-**Made with ❤️ for building family connections**
+MIT — free to use, modify, and share.
