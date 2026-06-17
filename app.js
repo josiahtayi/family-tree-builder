@@ -92,7 +92,9 @@ const DEFAULT_FAMILY=[
 
 let family=[],selectedId=null,collapsed=new Set(),term='';
 
-function clone(x){return JSON.parse(JSON.stringify(x));}
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};}
 const byId=id=>family.find(p=>p.id===id);
 const childrenOf=id=>family.filter(p=>p.parentId===id);
 function roots(){const ids=new Set(family.map(p=>p.id));return family.filter(p=>!p.parentId||!ids.has(p.parentId));}
@@ -105,8 +107,41 @@ function branchMatch(p){return selfMatch(p)||childrenOf(p.id).some(branchMatch);
 function descendants(id){const s=new Set();(function r(x){for(const c of childrenOf(x)){s.add(c.id);r(c.id);}})(id);return s;}
 function esc(s){return(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
-function toDoc(p){const{photo,...data}=p;return data;}
+// ── Toast notifications ───────────────────────────────────────────────────────
 
+function toast(msg,type='ok'){
+  const t=document.createElement('div');
+  t.className='toast toast-'+(type==='err'?'err':'ok');
+  t.textContent=msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),250);},2500);
+}
+
+// ── Save status indicator ─────────────────────────────────────────────────────
+
+let saveStatusTimer;
+function showSaving(){
+  const s=el('saveStatus');
+  clearTimeout(saveStatusTimer);
+  s.textContent='Saving…';
+  s.className='save-status saving';
+}
+function showSaved(){
+  const s=el('saveStatus');
+  s.textContent='Saved ✓';
+  s.className='save-status saved';
+  saveStatusTimer=setTimeout(()=>{s.textContent='';s.className='save-status';},2000);
+}
+function showSaveError(){
+  const s=el('saveStatus');
+  s.textContent='Save failed — check connection';
+  s.className='save-status error';
+}
+
+// ── Firestore helpers ─────────────────────────────────────────────────────────
+
+function toDoc(p){const{photo,...data}=p;return data;}
 async function saveToDB(p){await personRef(p.id).set(toDoc(p));}
 
 async function seedDefaults(){
@@ -120,6 +155,8 @@ function withPhoto(p){
   return photo?{...p,photo}:p;
 }
 
+// ── Real-time listener ────────────────────────────────────────────────────────
+
 el('tree').innerHTML='<div class="empty">Connecting…</div>';
 peopleCol.onSnapshot(snapshot=>{
   if(snapshot.empty){seedDefaults();return;}
@@ -128,10 +165,27 @@ peopleCol.onSnapshot(snapshot=>{
   render();
 },()=>{el('tree').innerHTML='<div class="empty">Connection error — please refresh.</div>';});
 
+// ── Render ────────────────────────────────────────────────────────────────────
+
 function render(){renderStats();renderTree();}
 function renderStats(){el('stats').textContent=family.length+' people · '+(maxDepth()+1)+' generations';}
 function toggle(id){collapsed.has(id)?collapsed.delete(id):collapsed.add(id);renderTree();}
-function select(id){selectedId=id;openEditor();renderTree();}
+
+function select(id){
+  selectedId=id;
+  openEditor();
+  renderTree();
+  requestAnimationFrame(()=>{
+    const row=document.querySelector('.rowline.selected');
+    if(row)row.scrollIntoView({block:'nearest',behavior:'smooth'});
+  });
+}
+
+function closeEditor(){
+  selectedId=null;
+  el('editor').hidden=true;
+  renderTree();
+}
 
 function renderTree(){
   const host=el('tree');host.innerHTML='';
@@ -143,34 +197,60 @@ function renderNode(p){
   const wrap=document.createElement('div');wrap.className='node';
   const kids=childrenOf(p.id);const hasKids=kids.length>0;
   const expanded=term?true:!collapsed.has(p.id);
+
   const row=document.createElement('div');
   row.className='rowline'+(p.id===selectedId?' selected':'');
   if(term){if(selfMatch(p))row.classList.add('hit');else if(!branchMatch(p))row.classList.add('dim');}
-  const caret=document.createElement('button');caret.className='caret'+(hasKids?'':' leaf');
+
+  const caret=document.createElement('button');
+  caret.type='button';
+  caret.className='caret'+(hasKids?'':' leaf');
   caret.textContent=hasKids?(expanded?'▾':'▸'):'•';
   if(hasKids)caret.addEventListener('click',e=>{e.stopPropagation();toggle(p.id);});
   row.appendChild(caret);
+
   let av;
-  if(p.photo){av=document.createElement('img');av.src=p.photo;av.alt=p.name;}else{av=document.createElement('div');av.textContent=initials(p.name);}
+  if(p.photo){av=document.createElement('img');av.src=p.photo;av.alt=p.name;}
+  else{av=document.createElement('div');av.textContent=initials(p.name);}
   av.className='avatar';row.appendChild(av);
+
   const meta=document.createElement('div');meta.className='meta';
-  const name=document.createElement('div');name.className='name';name.appendChild(document.createTextNode(p.name));
-  if(p.deceased){const d=document.createElement('span');d.className='dagger';d.textContent='†';name.appendChild(d);}
-  meta.appendChild(name);
+  const nameEl=document.createElement('div');nameEl.className='name';
+  nameEl.appendChild(document.createTextNode(p.name));
+  if(p.deceased){const d=document.createElement('span');d.className='dagger';d.textContent='†';nameEl.appendChild(d);}
+  meta.appendChild(nameEl);
+
   const bits=[];if(p.spouse)bits.push('& '+p.spouse.name+(p.spouse.deceased?' †':''));
   const sub=document.createElement('div');sub.className='sub';sub.textContent=bits.join('');
   if(hasKids){const c=document.createElement('span');c.className='count';c.textContent=(bits.length?' · ':'')+kids.length+(kids.length===1?' child':' children');sub.appendChild(c);}
-  if(sub.textContent)meta.appendChild(sub);
+  if(sub.textContent||sub.children.length)meta.appendChild(sub);
   row.appendChild(meta);
+
+  const addBtn=document.createElement('button');
+  addBtn.type='button';
+  addBtn.className='add-child-btn';
+  addBtn.textContent='+ child';
+  addBtn.title='Add child to '+p.name;
+  addBtn.addEventListener('click',e=>{e.stopPropagation();addChildTo(p.id);});
+  row.appendChild(addBtn);
+
   row.addEventListener('click',()=>select(p.id));
   wrap.appendChild(row);
-  if(hasKids&&expanded){const ch=document.createElement('div');ch.className='children';for(const k of kids)ch.appendChild(renderNode(k));wrap.appendChild(ch);}
+
+  if(hasKids&&expanded){
+    const ch=document.createElement('div');ch.className='children';
+    for(const k of kids)ch.appendChild(renderNode(k));
+    wrap.appendChild(ch);
+  }
   return wrap;
 }
 
+// ── Editor ────────────────────────────────────────────────────────────────────
+
 function openEditor(){
   const p=byId(selectedId);const ed=el('editor');
-  if(!p){ed.hidden=true;return;}ed.hidden=false;
+  if(!p){ed.hidden=true;return;}
+  ed.hidden=false;
   el('eName').value=p.name||'';
   el('eSpouse').value=p.spouse?.name||'';
   el('eDeceased').checked=!!p.deceased;
@@ -194,12 +274,22 @@ async function saveMember(){
   if(spName){p.spouse={name:spName};if(spDec)p.spouse.deceased=true;}else{delete p.spouse;}
   p.deceased=el('eDeceased').checked;
   p.parentId=el('eParent').value||null;
-  await saveToDB(p);
-  openEditor();
+  showSaving();
+  try{
+    await saveToDB(p);
+    showSaved();
+    openEditor();
+  }catch(e){
+    showSaveError();
+    toast('Failed to save — check your connection','err');
+  }
 }
 
-async function addMember(){
-  const parentId=(selectedId&&byId(selectedId))?selectedId:(roots()[0]?roots()[0].id:null);
+const debouncedSave=debounce(saveMember,700);
+
+// ── Add members ───────────────────────────────────────────────────────────────
+
+async function addChildTo(parentId){
   const id='p'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);
   const newPerson={id,name:'New member',parentId};
   family.push(newPerson);
@@ -210,18 +300,31 @@ async function addMember(){
   el('eName').focus();el('eName').select();
 }
 
+async function addMember(){
+  const parentId=(selectedId&&byId(selectedId))?selectedId:(roots()[0]?roots()[0].id:null);
+  await addChildTo(parentId);
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+
 async function deleteMember(){
   const p=byId(selectedId);if(!p)return;
   const kids=childrenOf(p.id);
-  const msg=kids.length?('Delete '+p.name+'? Their '+kids.length+' child(ren) will move up to the parent above.'):('Delete '+p.name+'?');
+  const msg=kids.length
+    ?('Delete '+p.name+'? Their '+kids.length+' child(ren) will move up to the parent above.')
+    :('Delete '+p.name+'?');
   if(!confirm(msg))return;
+  const name=p.name;
   const batch=db.batch();
   for(const c of kids)batch.set(personRef(c.id),toDoc({...c,parentId:p.parentId}));
   batch.delete(personRef(p.id));
   localStorage.removeItem('photo_'+p.id);
   selectedId=null;el('editor').hidden=true;
   await batch.commit();
+  toast(name+' removed');
 }
+
+// ── Photos ────────────────────────────────────────────────────────────────────
 
 function onPhoto(e){
   const f=e.target.files[0];if(!f)return;
@@ -232,16 +335,20 @@ function onPhoto(e){
   };
   r.readAsDataURL(f);e.target.value='';
 }
+
 function removePhoto(){
   const p=byId(selectedId);
   if(p){localStorage.removeItem('photo_'+p.id);delete p.photo;openEditor();renderTree();}
 }
+
+// ── Export / Import ───────────────────────────────────────────────────────────
 
 function exportData(){
   const data=family.map(({photo,...rest})=>rest);
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='family-data.json';
   document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
+  toast('Downloaded family-data.json');
 }
 
 async function importData(e){
@@ -257,17 +364,32 @@ async function importData(e){
       data.forEach(p=>batch.set(personRef(p.id),toDoc(p)));
       await batch.commit();
       selectedId=null;collapsed.clear();el('editor').hidden=true;
-    }catch(err){alert('That file is not a valid family-data.json export.');}
+      toast('Data imported — '+data.length+' people loaded');
+    }catch(err){
+      toast('That file is not a valid family-data.json export','err');
+    }
   };
   r.readAsText(f);e.target.value='';
 }
 
+// ── Expand / Collapse ─────────────────────────────────────────────────────────
+
 function expandAll(){collapsed.clear();renderTree();}
 function collapseAll(){collapsed=new Set(family.filter(p=>childrenOf(p.id).length).map(p=>p.id));renderTree();}
+
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&selectedId){closeEditor();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();if(selectedId)saveMember();}
+});
+
+// ── Event listeners ───────────────────────────────────────────────────────────
 
 el('addBtn').addEventListener('click',addMember);
 el('saveBtn').addEventListener('click',saveMember);
 el('deleteBtn').addEventListener('click',deleteMember);
+el('closeEditor').addEventListener('click',closeEditor);
 el('ePhotoInput').addEventListener('change',onPhoto);
 el('ePhotoRemove').addEventListener('click',removePhoto);
 el('exportBtn').addEventListener('click',exportData);
@@ -275,4 +397,24 @@ el('importBtn').addEventListener('click',()=>el('importFile').click());
 el('importFile').addEventListener('change',importData);
 el('expandBtn').addEventListener('click',expandAll);
 el('collapseBtn').addEventListener('click',collapseAll);
-el('search').addEventListener('input',e=>{term=norm(e.target.value);renderTree();});
+
+// Auto-save on text input (debounced), immediate on checkbox/select change
+el('eName').addEventListener('input',debouncedSave);
+el('eSpouse').addEventListener('input',debouncedSave);
+el('eDeceased').addEventListener('change',saveMember);
+el('eSpouseDeceased').addEventListener('change',saveMember);
+el('eParent').addEventListener('change',saveMember);
+
+// Search with clear button
+el('search').addEventListener('input',e=>{
+  term=norm(e.target.value);
+  el('searchClear').hidden=!term;
+  renderTree();
+});
+el('searchClear').addEventListener('click',()=>{
+  el('search').value='';
+  term='';
+  el('searchClear').hidden=true;
+  renderTree();
+  el('search').focus();
+});

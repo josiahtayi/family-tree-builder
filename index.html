@@ -11,11 +11,14 @@
   <aside class="side">
     <div class="brand"><h1>Family Tree</h1><p id="stats"></p></div>
     <div class="row"><button class="btn primary" id="addBtn" style="width:100%">+ Add member</button></div>
-    <div class="row"><input id="search" placeholder="Search names…"></div>
+    <div class="row search-wrap"><input id="search" placeholder="Search names…"><button type="button" class="search-clear" id="searchClear" hidden>✕</button></div>
     <div class="row gap"><button class="btn" id="expandBtn" style="flex:1">Expand all</button><button class="btn" id="collapseBtn" style="flex:1">Collapse all</button></div>
     <div class="row gap"><button class="btn" id="exportBtn" style="flex:1">Download data</button><button class="btn" id="importBtn" style="flex:1">Load data</button><input type="file" id="importFile" accept="application/json" hidden></div>
     <div class="editor" id="editor" hidden>
-      <h2>Edit member</h2>
+      <div class="editor-header">
+        <h2>Edit member</h2>
+        <button class="icon-btn" id="closeEditor" title="Close (Esc)">✕</button>
+      </div>
       <div class="photo">
         <img id="ePhoto" alt="" hidden>
         <div id="ePhotoFallback" class="avatar lg"></div>
@@ -30,12 +33,13 @@
       <select id="eParent"></select>
       <div class="checks"><label><input type="checkbox" id="eDeceased"> Deceased</label><label><input type="checkbox" id="eSpouseDeceased"> Spouse deceased</label></div>
       <div class="row gap"><button class="btn primary grow" id="saveBtn">Save</button><button class="btn danger" id="deleteBtn">Delete</button></div>
-      <p class="hint">Changes save to the shared database instantly — everyone with the link will see updates in real time. Photos are stored locally on your device only.</p>
+      <div id="saveStatus" class="save-status"></div>
+      <p class="hint">Changes are saved automatically. Photos are stored locally on your device only.</p>
     </div>
   </aside>
   <main class="main">
     <div class="tree" id="tree"></div>
-    <div class="legend" style="font-size:11px;color:#9a9388;border-top:1px solid #ece6dc;padding-top:8px;margin-top:8px">† = deceased · click a person to edit · click ▸/▾ to expand or collapse</div>
+    <div class="legend" style="font-size:11px;color:#9a9388;border-top:1px solid #ece6dc;padding-top:8px;margin-top:8px">† = deceased · click a person to edit · hover a row to add a child · Esc to close editor</div>
   </main>
 </div>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
