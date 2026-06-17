@@ -101,7 +101,8 @@ const firebaseConfig={
 
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
-const peopleCol=collection(db,'people');
+const familyRef=doc(db,'families','selina');
+const peopleCol=collection(familyRef,'people');
 
 const el=id=>document.getElementById(id);
 
@@ -201,11 +202,11 @@ function esc(s){return(s||'').replace(/[&<>”]/g,c=>({'&':'&amp;','<':'&lt;','>
 // Strip photo before writing — base64 images live in localStorage only
 function toDoc(p){const{photo,...data}=p;return data;}
 
-async function saveToDB(p){await setDoc(doc(db,'people',String(p.id)),toDoc(p));}
+async function saveToDB(p){await setDoc(doc(peopleCol,String(p.id)),toDoc(p));}
 
 async function seedDefaults(){
   const batch=writeBatch(db);
-  DEFAULT_FAMILY.forEach(p=>batch.set(doc(db,'people',String(p.id)),toDoc(p)));
+  DEFAULT_FAMILY.forEach(p=>batch.set(doc(peopleCol,String(p.id)),toDoc(p)));
   await batch.commit();
 }
 
@@ -312,8 +313,8 @@ async function deleteMember(){
   const msg=kids.length?('Delete '+p.name+'? Their '+kids.length+' child(ren) will move up to the parent above.'):('Delete '+p.name+'?');
   if(!confirm(msg))return;
   const batch=writeBatch(db);
-  for(const c of kids)batch.set(doc(db,'people',String(c.id)),toDoc({...c,parentId:p.parentId}));
-  batch.delete(doc(db,'people',String(p.id)));
+  for(const c of kids)batch.set(doc(peopleCol,String(c.id)),toDoc({...c,parentId:p.parentId}));
+  batch.delete(doc(peopleCol,String(p.id)));
   localStorage.removeItem('photo_'+p.id);
   selectedId=null;el('editor').hidden=true;
   await batch.commit();
@@ -350,7 +351,7 @@ async function importData(e){
       const existing=await getDocs(peopleCol);
       const batch=writeBatch(db);
       existing.forEach(d=>batch.delete(d.ref));
-      data.forEach(p=>batch.set(doc(db,'people',String(p.id)),toDoc(p)));
+      data.forEach(p=>batch.set(doc(peopleCol,String(p.id)),toDoc(p)));
       await batch.commit();
       selectedId=null;collapsed.clear();el('editor').hidden=true;
     }catch(err){alert('That file is not a valid family-data.json export.');}
