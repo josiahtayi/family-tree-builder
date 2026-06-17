@@ -18,9 +18,9 @@
   --input-bg:#1a1a1a; --shadow:0 1px 4px rgba(0,0,0,.3);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 
-/* Toolbar */
+/* ── Toolbar ── */
 .tb{display:flex;align-items:center;gap:5px;padding:7px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
 .tb-title{font-size:14px;font-weight:700;color:var(--strong);white-space:nowrap;margin-right:2px}
 .tb-sep{width:1px;height:18px;background:var(--border);margin:0 3px;flex-shrink:0}
@@ -28,8 +28,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .sw input{padding:5px 8px 5px 24px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--input-bg);color:var(--text);width:150px;font-family:inherit}
 .sw::before{content:"⌕";position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);pointer-events:none}
 .tree-sel{padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--input-bg);color:var(--text);font-family:inherit}
+/* .m = mobile-only; hidden on desktop */
+.m{display:none!important}
 
-/* Layout */
+/* ── Mobile search bar (hidden until toggled) ── */
+.mobile-search{display:none;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.mobile-search.open{display:flex}
+.mobile-search input{flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:16px;background:var(--input-bg);color:var(--text);font-family:inherit}
+.mobile-search input:focus{outline:none;border-color:var(--primary)}
+.mobile-search button{padding:6px 10px;font-size:14px;color:var(--muted)}
+
+/* ── Layout ── */
 .main{display:flex;flex:1;gap:10px;padding:10px;overflow:hidden;min-height:0}
 .sidebar{width:330px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow-y:auto;box-shadow:var(--shadow)}
 .si{padding:12px}
@@ -38,7 +47,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .ca-head h2{font-size:13px;font-weight:600;color:var(--strong)}
 .ca-body{padding:14px}
 
-/* Buttons */
+/* ── Buttons ── */
 button{display:inline-flex;align-items:center;gap:3px;padding:5px 10px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;transition:background .1s,border-color .1s;font-family:inherit}
 button:hover{background:var(--surface2);border-color:var(--muted)}
 button.primary{background:var(--primary);color:#fff;border-color:transparent}
@@ -48,7 +57,7 @@ button.danger:hover{background:rgba(217,48,37,.08)}
 button:disabled{opacity:.38;pointer-events:none}
 .hidden{display:none!important}
 
-/* Form */
+/* ── Form ── */
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .fg{margin-bottom:8px}
 .fg label{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-bottom:2px}
@@ -56,18 +65,18 @@ input[type=text],input[type=number],select,textarea{width:100%;padding:6px 8px;b
 textarea{resize:vertical;min-height:50px}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)}
 
-/* Section heads */
+/* ── Section heads ── */
 .sh{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:12px 0 5px}
 .divider{border-top:1px solid var(--border);margin:10px 0}
 
-/* Photo */
+/* ── Photo ── */
 .pb{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px;text-align:center;margin-bottom:9px}
 .pb img.prev{width:100%;height:100px;object-fit:cover;border-radius:5px;margin-bottom:6px;display:block}
 .pb input[type=file]{display:none}
 .phlbl{display:inline-block;padding:5px 10px;background:var(--primary);color:#fff;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer}
 .phlbl:hover{background:var(--primary-h)}
 
-/* Person list */
+/* ── Person list ── */
 .pi{display:flex;align-items:center;gap:8px;padding:7px 8px;margin-bottom:4px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:background .1s,border-color .1s}
 .pi:hover{background:var(--surface);border-color:var(--muted)}
 .pi.sel{border-color:var(--primary);background:var(--primary-l)}
@@ -77,7 +86,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
 .br{display:flex;gap:5px;margin-top:9px;flex-wrap:wrap}
 .empty{color:var(--muted);font-size:13px;text-align:center;padding:28px 10px}
 
-/* Modal */
+/* ── Detail modal ── */
 .mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
 .mbg.open{display:flex}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;width:370px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25);position:relative}
@@ -96,42 +105,128 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
 .mrel-l{color:var(--muted)}
 .mrel-r{font-weight:500;color:var(--strong);text-align:right;max-width:200px}
 
+/* ── Bottom tab bar (mobile only, hidden on desktop) ── */
+.tab-bar{display:none}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 0;border:none;border-radius:0;background:transparent;color:var(--muted);font-size:11px;font-weight:500;gap:3px;min-height:52px;cursor:pointer}
+.tab-btn:hover{background:var(--surface2)}
+.tab-btn .ti{font-size:20px;line-height:1}
+.tab-btn.active{color:var(--primary)}
+
+/* ── More menu (mobile bottom sheet) ── */
+.more-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end}
+.more-bg.open{display:flex}
+.more-sheet{background:var(--surface);border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));width:100%;max-height:85vh;overflow-y:auto}
+.more-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.more-lbl{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.more-row{display:flex;gap:8px;margin-bottom:8px}
+.more-row button{flex:1;justify-content:center;padding:10px 8px;font-size:13px}
+.more-sep{border-top:1px solid var(--border);margin:12px 0}
+.more-sel{width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--input-bg);color:var(--text);font-family:inherit;margin-bottom:8px}
+
+/* ── Print ── */
 @media print{
-  .tb,.sidebar,.ca-head{display:none!important}
+  .tb,.sidebar,.ca-head,.tab-bar,.more-bg,.mobile-search{display:none!important}
   body{height:auto;overflow:visible}
   .main{display:block;padding:0;height:auto;overflow:visible}
   .canvas-area{border:none;box-shadow:none;border-radius:0}
   .ca-body{padding:0;overflow:visible}
   #treeContainer svg{width:100%!important;height:auto!important}
 }
+
+/* ── Mobile responsive ── */
+@media (max-width:640px){
+  /* Prevent iOS input zoom */
+  input[type=text],input[type=number],select,textarea{font-size:16px!important}
+
+  /* Compact toolbar: hide desktop items, show mobile items */
+  .d{display:none!important}
+  .m{display:inline-flex!important}
+  .tb{padding:8px 12px}
+  .tb-title{flex:1}
+
+  /* Stack layout into tabs */
+  .main{flex-direction:column;padding:0;gap:0;padding-bottom:0}
+  .sidebar{
+    width:100%;border-radius:0;border-left:none;border-right:none;border-top:none;
+    display:none;flex:1;min-height:0;overflow-y:auto;
+  }
+  .sidebar.tab-active{display:flex;flex-direction:column}
+  .canvas-area{
+    border-radius:0;border-left:none;border-right:none;border-top:none;
+    display:none;flex:1;overflow:auto;
+  }
+  .canvas-area.tab-active{display:block;flex:1}
+  .ca-body{padding:10px;min-height:0}
+  .si{padding-bottom:70px}
+
+  /* Bottom tab bar */
+  .tab-bar{
+    display:flex;position:fixed;bottom:0;left:0;right:0;
+    background:var(--surface);border-top:1px solid var(--border);
+    z-index:50;padding-bottom:env(safe-area-inset-bottom);
+  }
+
+  /* FAB add button */
+  .fab{
+    position:fixed;bottom:calc(60px + env(safe-area-inset-bottom) + 14px);right:16px;
+    width:50px;height:50px;border-radius:50%;background:var(--primary);color:#fff;
+    font-size:24px;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);
+    display:flex;align-items:center;justify-content:center;z-index:49;cursor:pointer;
+  }
+  .fab:hover{background:var(--primary-h)}
+
+  /* Bigger touch targets in list */
+  .pi{padding:10px 10px;min-height:52px}
+  .br button{min-height:40px;flex:1}
+
+  /* Modal fills screen on mobile */
+  .modal{width:100%;max-width:100%;border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:92vh;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
+  .mbg{align-items:flex-end}
+}
 </style>
 </head>
 <body>
 
+<!-- Toolbar -->
 <div class="tb">
   <span class="tb-title">👨‍👩‍👧‍👦 Family Tree</span>
-  <div class="tb-sep"></div>
-  <select id="treeSel" class="tree-sel" onchange="switchTree(this.value)"></select>
-  <button onclick="newTree()">+ New</button>
-  <button onclick="renameTree()">Rename</button>
-  <div class="tb-sep"></div>
-  <button id="undoBtn" onclick="undo()" disabled>↩ Undo</button>
-  <button id="redoBtn" onclick="redo()" disabled>↪ Redo</button>
-  <div class="tb-sep"></div>
-  <div class="sw"><input type="text" id="searchInp" placeholder="Search…" oninput="onSearch(this.value)"></div>
-  <div class="tb-sep"></div>
-  <button onclick="exportJSON()">⬇ JSON</button>
-  <button onclick="document.getElementById('importInp').click()">⬆ Import</button>
+
+  <!-- Desktop-only items (.d hidden on mobile) -->
+  <div class="tb-sep d"></div>
+  <select id="treeSel" class="tree-sel d" onchange="switchTree(this.value)"></select>
+  <button class="d" onclick="newTree()">+ New</button>
+  <button class="d" onclick="renameTree()">Rename</button>
+  <div class="tb-sep d"></div>
+  <button id="undoBtn" class="d" onclick="undo()" disabled>↩ Undo</button>
+  <button id="redoBtn" class="d" onclick="redo()" disabled>↪ Redo</button>
+  <div class="tb-sep d"></div>
+  <div class="sw d"><input type="text" id="searchInp" placeholder="Search…" oninput="onSearch(this.value)"></div>
+  <div class="tb-sep d"></div>
+  <button class="d" onclick="exportJSON()">⬇ JSON</button>
+  <button class="d" onclick="document.getElementById('importInp').click()">⬆ Import</button>
   <input type="file" id="importInp" accept=".json" style="display:none" onchange="importJSON(event)">
-  <div class="tb-sep"></div>
-  <button id="pngBtn" onclick="dlPNG()" class="hidden">PNG</button>
-  <button id="svgBtn" onclick="dlSVG()" class="hidden">SVG</button>
-  <button onclick="window.print()" title="Print">🖨</button>
+  <div class="tb-sep d"></div>
+  <button id="pngBtn" onclick="dlPNG()" class="hidden d">PNG</button>
+  <button id="svgBtn" onclick="dlSVG()" class="hidden d">SVG</button>
+  <button class="d" onclick="window.print()">🖨</button>
+
+  <!-- Always visible -->
   <button id="darkBtn" onclick="toggleDark()">🌙</button>
+
+  <!-- Mobile-only items (.m hidden on desktop) -->
+  <button class="m" id="searchToggleBtn" onclick="toggleMobileSearch()" title="Search">🔍</button>
+  <button class="m" onclick="openMoreMenu()" title="More">⋯</button>
 </div>
 
+<!-- Mobile search bar (hidden until toggled) -->
+<div class="mobile-search" id="mobileSearch">
+  <input type="search" id="mobileSearchInp" placeholder="Search members…" oninput="onSearch(this.value)" autocomplete="off">
+  <button onclick="closeMobileSearch()">✕</button>
+</div>
+
+<!-- Main layout -->
 <div class="main">
-  <div class="sidebar">
+  <div class="sidebar" id="sidebar">
     <div class="si">
       <button class="primary" style="width:100%;margin-bottom:10px" onclick="addPerson()">+ Add Member</button>
 
@@ -143,7 +238,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
           <input type="file" id="photoInp" accept="image/*" onchange="uploadPhoto(event)">
           <button class="danger" id="rmPhotoBtn" style="margin-top:6px;width:100%;display:none" onclick="removePhoto()">Remove Photo</button>
         </div>
-        <div class="fg"><label>Full Name</label><input type="text" id="eName" placeholder="e.g., John Smith"></div>
+        <div class="fg"><label>Full Name</label><input type="text" id="eName" placeholder="e.g., John Smith" autocomplete="name"></div>
         <div class="fr">
           <div class="fg"><label>Birth Year</label><input type="number" id="eBirth" placeholder="1950"></div>
           <div class="fg"><label>Death Year</label><input type="number" id="eDeath" placeholder="—"></div>
@@ -174,10 +269,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
     </div>
   </div>
 
-  <div class="canvas-area">
+  <div class="canvas-area" id="canvasArea">
     <div class="ca-head">
       <h2>Family Tree Preview</h2>
-      <div style="display:flex;gap:6px" id="dlBtns"></div>
+      <div style="display:flex;gap:6px">
+        <button id="pngBtn2" onclick="dlPNG()" class="hidden">PNG</button>
+        <button id="svgBtn2" onclick="dlSVG()" class="hidden">SVG</button>
+      </div>
     </div>
     <div class="ca-body">
       <div id="treeContainer"></div>
@@ -185,6 +283,56 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
   </div>
 </div>
 
+<!-- FAB (mobile add button, shown over tree view) -->
+<button class="fab m" id="fabBtn" onclick="addPerson();switchTab('people')" title="Add member">+</button>
+
+<!-- Bottom tab bar (mobile only) -->
+<div class="tab-bar" id="tabBar">
+  <button class="tab-btn active" id="tabTree" onclick="switchTab('tree')">
+    <span class="ti">🌳</span><span>Tree</span>
+  </button>
+  <button class="tab-btn" id="tabPeople" onclick="switchTab('people')">
+    <span class="ti">👥</span><span>People</span>
+  </button>
+</div>
+
+<!-- More menu bottom sheet (mobile) -->
+<div class="more-bg" id="moreBg" onclick="closeMoreMenuBg(event)">
+  <div class="more-sheet">
+    <div class="more-handle"></div>
+
+    <div class="more-lbl">Tree</div>
+    <select id="mTreeSel" class="more-sel" onchange="switchTree(this.value);closeMoreMenu()"></select>
+    <div class="more-row">
+      <button onclick="newTree();closeMoreMenu()">+ New Tree</button>
+      <button onclick="renameTree();closeMoreMenu()">Rename</button>
+    </div>
+
+    <div class="more-sep"></div>
+    <div class="more-lbl">History</div>
+    <div class="more-row">
+      <button id="mUndoBtn" onclick="undo()" disabled>↩ Undo</button>
+      <button id="mRedoBtn" onclick="redo()" disabled>↪ Redo</button>
+    </div>
+
+    <div class="more-sep"></div>
+    <div class="more-lbl">Data</div>
+    <div class="more-row">
+      <button onclick="exportJSON();closeMoreMenu()">⬇ Export JSON</button>
+      <button onclick="document.getElementById('importInp').click();closeMoreMenu()">⬆ Import</button>
+    </div>
+
+    <div class="more-sep"></div>
+    <div class="more-lbl">Export Tree</div>
+    <div class="more-row">
+      <button onclick="dlPNG();closeMoreMenu()">PNG</button>
+      <button onclick="dlSVG();closeMoreMenu()">SVG</button>
+      <button onclick="window.print()">🖨 Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail modal -->
 <div class="mbg" id="detailBg" onclick="bgClick(event)">
   <div class="modal" id="detailModal">
     <button class="mc" onclick="closeDetail()">×</button>
@@ -228,7 +376,6 @@ function loadApp() {
     const raw = JSON.parse(localStorage.getItem('ftApp'));
     if (raw?.trees) { raw.trees.forEach(t => { t.members = migrate(t.members); }); return raw; }
   } catch(_) {}
-  // Migrate old single-tree format
   try {
     const old = JSON.parse(localStorage.getItem('familyTree'));
     if (old) return {activeId:1, trees:[{id:1,name:'My Family',members:migrate(old)}]};
@@ -243,10 +390,12 @@ let app = loadApp();
 let selectedId = null;
 let query = '';
 let hist = [], histIdx = -1;
+let activeTab = 'tree';
 
 function fam() { return app.trees.find(t => t.id === app.activeId)?.members ?? []; }
 function setFam(m) { const t = app.trees.find(t => t.id === app.activeId); if(t) t.members = m; }
 function nextId() { const f = fam(); return f.length ? Math.max(...f.map(p=>p.id))+1 : 1; }
+function isMobile() { return window.innerWidth <= 640; }
 
 // ── Undo / Redo ───────────────────────────────────────────────────────────────
 function pushHist() {
@@ -270,12 +419,19 @@ function redo() {
 function syncHistBtns() {
   document.getElementById('undoBtn').disabled = histIdx <= 0;
   document.getElementById('redoBtn').disabled = histIdx >= hist.length-1;
+  const mu = document.getElementById('mUndoBtn');
+  const mr = document.getElementById('mRedoBtn');
+  if (mu) mu.disabled = histIdx <= 0;
+  if (mr) mr.disabled = histIdx >= hist.length-1;
 }
 
 // ── Multiple Trees ────────────────────────────────────────────────────────────
 function renderTreeSel() {
-  document.getElementById('treeSel').innerHTML = app.trees.map(t =>
+  const opts = app.trees.map(t =>
     `<option value="${t.id}"${t.id===app.activeId?' selected':''}>${t.name}</option>`).join('');
+  document.getElementById('treeSel').innerHTML = opts;
+  const ms = document.getElementById('mTreeSel');
+  if (ms) ms.innerHTML = opts;
 }
 function switchTree(id) {
   app.activeId = +id; selectedId = null;
@@ -298,6 +454,53 @@ function renameTree() {
 
 // ── Search ────────────────────────────────────────────────────────────────────
 function onSearch(v) { query = v.toLowerCase().trim(); renderAll(); }
+
+// ── Mobile tabs ───────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  const sidebar = document.getElementById('sidebar');
+  const canvas  = document.getElementById('canvasArea');
+  const fabBtn  = document.getElementById('fabBtn');
+  if (tab === 'tree') {
+    sidebar.classList.remove('tab-active');
+    canvas.classList.add('tab-active');
+    document.getElementById('tabTree').classList.add('active');
+    document.getElementById('tabPeople').classList.remove('active');
+    if (fabBtn) fabBtn.style.display = '';
+  } else {
+    canvas.classList.remove('tab-active');
+    sidebar.classList.add('tab-active');
+    document.getElementById('tabPeople').classList.add('active');
+    document.getElementById('tabTree').classList.remove('active');
+    if (fabBtn) fabBtn.style.display = 'none';
+  }
+}
+
+// ── Mobile search ─────────────────────────────────────────────────────────────
+function toggleMobileSearch() {
+  const bar = document.getElementById('mobileSearch');
+  const isOpen = bar.classList.toggle('open');
+  if (isOpen) {
+    document.getElementById('mobileSearchInp').focus();
+  } else {
+    document.getElementById('mobileSearchInp').value = '';
+    onSearch('');
+  }
+}
+function closeMobileSearch() {
+  document.getElementById('mobileSearch').classList.remove('open');
+  document.getElementById('mobileSearchInp').value = '';
+  onSearch('');
+}
+
+// ── More menu ─────────────────────────────────────────────────────────────────
+function openMoreMenu() {
+  renderTreeSel();
+  syncHistBtns();
+  document.getElementById('moreBg').classList.add('open');
+}
+function closeMoreMenu() { document.getElementById('moreBg').classList.remove('open'); }
+function closeMoreMenuBg(e) { if (e.target===document.getElementById('moreBg')) closeMoreMenu(); }
 
 // ── Dark Mode ─────────────────────────────────────────────────────────────────
 function toggleDark() {
@@ -346,10 +549,15 @@ function addPerson() {
   f.push({id,name:'New Person',birth:new Date().getFullYear(),death:null,
     generation:'Child',parentId:null,spouseId:null,notes:'',photo:null});
   setFam(f); selectedId = id; persist(); renderAll();
-  setTimeout(() => document.getElementById('eName').select(), 50);
+  setTimeout(() => { const el = document.getElementById('eName'); if(el) el.select(); }, 80);
 }
 
-function selectPerson(id) { selectedId = id; populateEditor(); renderAll(); }
+function selectPerson(id) {
+  selectedId = id;
+  populateEditor();
+  renderAll();
+  if (isMobile()) switchTab('people');
+}
 
 function populateEditor() {
   const f = fam(), p = f.find(x=>x.id===selectedId);
@@ -384,7 +592,6 @@ function savePerson() {
   p.parentId   = document.getElementById('eParent').value ? +document.getElementById('eParent').value : null;
   p.notes      = document.getElementById('eNotes').value;
   const newSid = document.getElementById('eSpouse').value ? +document.getElementById('eSpouse').value : null;
-  // Clear old spouse back-link
   if (p.spouseId && p.spouseId !== newSid) {
     const old = f.find(q=>q.id===p.spouseId);
     if (old && old.spouseId===p.id) old.spouseId = null;
@@ -428,7 +635,7 @@ function removePhoto() {
   if (p) { p.photo=null; setFam(f); persist(); renderAll(); }
 }
 
-// ── Tree Layout (Reingold-Tilford style) ──────────────────────────────────────
+// ── Tree Layout ───────────────────────────────────────────────────────────────
 function computeLayout(members) {
   if (!members.length) return {};
   const idSet = new Set(members.map(p=>p.id));
@@ -455,7 +662,6 @@ function computeLayout(members) {
       ch.forEach(cid => assignX(cid));
       pos[id].x = (pos[ch[0]].x + pos[ch[ch.length-1]].x)/2;
     }
-    // Place unvisited root-spouse adjacent immediately for better locality
     const person = members.find(p=>p.id===id);
     if (person?.spouseId && !visited.has(person.spouseId)) {
       const sp = members.find(p=>p.id===person.spouseId);
@@ -472,11 +678,17 @@ function computeLayout(members) {
 function initials(name) { return (name||'?').split(' ').map(n=>n[0]??'').join('').toUpperCase().slice(0,2); }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+function syncDownloadBtns(show) {
+  ['pngBtn','svgBtn','pngBtn2','svgBtn2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', !show);
+  });
+}
+
 function renderTree() {
   const f = fam();
   const container = document.getElementById('treeContainer');
-  document.getElementById('pngBtn').classList.toggle('hidden', !f.length);
-  document.getElementById('svgBtn').classList.toggle('hidden', !f.length);
+  syncDownloadBtns(f.length > 0);
   if (!f.length) { container.innerHTML='<div class="empty">Add members to see the tree.</div>'; return; }
 
   const matchIds = query ? new Set(f.filter(p=>p.name.toLowerCase().includes(query)).map(p=>p.id)) : null;
@@ -500,15 +712,12 @@ function renderTree() {
 
   f.forEach(p => {
     const px = pos[p.id];
-    // Parent-child edge
     if (p.parentId && pos[p.parentId]) {
       const pp = pos[p.parentId];
-      const x1=pp.x+NW/2, y1=pp.y+NH, x2=px.x+NW/2, y2=px.y;
-      const my=(y1+y2)/2;
-      const edgeDim = matchIds && !matchIds.has(p.id) && !matchIds.has(p.parentId);
-      edges += `<path d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}" fill="none" stroke="#aaa" stroke-width="1.5" opacity="${edgeDim?.1:.5}"/>`;
+      const x1=pp.x+NW/2, y1=pp.y+NH, x2=px.x+NW/2, y2=px.y, my=(y1+y2)/2;
+      const dim = matchIds && !matchIds.has(p.id) && !matchIds.has(p.parentId);
+      edges += `<path d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}" fill="none" stroke="#aaa" stroke-width="1.5" opacity="${dim?.1:.5}"/>`;
     }
-    // Spouse edge
     if (p.spouseId && pos[p.spouseId]) {
       const key = [p.id,p.spouseId].sort().join('-');
       if (!drawnSp.has(key)) {
@@ -516,9 +725,9 @@ function renderTree() {
         const sp = pos[p.spouseId];
         const [lp,rp] = px.x<sp.x ? [px,sp] : [sp,px];
         const x1=lp.x+NW, y1=lp.y+NH/2, x2=rp.x, y2=rp.y+NH/2;
-        const spDim = matchIds && !matchIds.has(p.id) && !matchIds.has(p.spouseId);
-        edges += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#e879a0" stroke-width="1.5" stroke-dasharray="5,3" opacity="${spDim?.1:.7}"/>`;
-        edges += `<text x="${(x1+x2)/2}" y="${(y1+y2)/2+4}" text-anchor="middle" font-size="11" fill="#e879a0" opacity="${spDim?.1:.85}">&#x2665;</text>`;
+        const dim = matchIds && !matchIds.has(p.id) && !matchIds.has(p.spouseId);
+        edges += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#e879a0" stroke-width="1.5" stroke-dasharray="5,3" opacity="${dim?.1:.7}"/>`;
+        edges += `<text x="${(x1+x2)/2}" y="${(y1+y2)/2+4}" text-anchor="middle" font-size="11" fill="#e879a0" opacity="${dim?.1:.85}">&#x2665;</text>`;
       }
     }
   });
@@ -529,8 +738,7 @@ function renderTree() {
     const isSel = p.id===selectedId;
     const isDim = matchIds && !matchIds.has(p.id);
     const label = p.name.length>17 ? p.name.slice(0,16)+'…' : p.name;
-    const dateParts = [p.birth??('' ), p.death?'†'+p.death:''].filter(Boolean);
-    const dateStr = dateParts.join(' ');
+    const dateStr = [p.birth??'', p.death?'†'+p.death:''].filter(Boolean).join(' ');
     const deceased = !!p.death;
 
     nodes += `<g onclick="nodeClick(${p.id})" style="cursor:pointer" opacity="${isDim?.2:1}">`;
@@ -565,7 +773,11 @@ function renderTree() {
   </svg>`;
 }
 
-function nodeClick(id) { selectPerson(id); viewDetail(id); }
+function nodeClick(id) {
+  selectPerson(id);
+  // On mobile show detail; on desktop always show detail
+  viewDetail(id);
+}
 
 // ── Members List ──────────────────────────────────────────────────────────────
 function renderMembers() {
@@ -584,7 +796,7 @@ function renderMembers() {
       const item = document.createElement('div');
       item.className = 'pi'+(p.id===selectedId?' sel':'');
       item.onclick = ()=>selectPerson(p.id);
-      const dateStr = [p.birth??('' ), p.death?'†'+p.death:''].filter(Boolean).join('  ');
+      const dateStr = [p.birth??'', p.death?'†'+p.death:''].filter(Boolean).join('  ');
       const av = p.photo
         ? `<img src="${p.photo}" class="av" style="border-radius:50%;object-fit:cover">`
         : `<div class="av">${initials(p.name)}</div>`;
@@ -606,8 +818,7 @@ function viewDetail(id) {
   const spouse   = f.find(x=>x.id===p.spouseId);
   const children = f.filter(x=>x.parentId===id);
   const siblings = parent ? f.filter(x=>x.parentId===parent.id&&x.id!==id) : [];
-  const thisYear = new Date().getFullYear();
-  const age = p.birth ? (p.death??thisYear)-p.birth : null;
+  const age = p.birth ? (p.death??new Date().getFullYear())-p.birth : null;
 
   const av = p.photo
     ? `<img src="${p.photo}" class="mav" style="border-radius:50%;object-fit:cover">`
@@ -666,7 +877,7 @@ document.addEventListener('keydown', e => {
   const mod = e.ctrlKey||e.metaKey;
   if (mod && e.key==='z' && !e.shiftKey) { e.preventDefault(); undo(); }
   if (mod && (e.key==='y'||(e.key==='z'&&e.shiftKey))) { e.preventDefault(); redo(); }
-  if (e.key==='Escape') closeDetail();
+  if (e.key==='Escape') { closeDetail(); closeMoreMenu(); closeMobileSearch(); }
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
@@ -675,6 +886,8 @@ histIdx = 0;
 syncHistBtns();
 renderTreeSel();
 renderAll();
+// Initialise mobile tab state
+switchTab('tree');
 </script>
 </body>
 </html>
