@@ -86,23 +86,20 @@ input:focus,select:focus{outline:none;border-color:#6b4f3a;background:#fff}
     <div class="legend" style="font-size:11px;color:#9a9388;border-top:1px solid #ece6dc;padding-top:8px;margin-top:8px">† = deceased · click a person to edit · click ▸/▾ to expand or collapse</div>
   </main>
 </div>
-<script type=”module”>
-import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import{getFirestore,collection,doc,onSnapshot,setDoc,deleteDoc,writeBatch,getDocs}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-const firebaseConfig={
+<script src=”https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js”></script>
+<script src=”https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js”></script>
+<script>
+firebase.initializeApp({
   apiKey:”AIzaSyAU9AWPfts0RZ2Ss6ue_ipaeI2hDSehVV8”,
   authDomain:”family-tree-43418.firebaseapp.com”,
   projectId:”family-tree-43418”,
   storageBucket:”family-tree-43418.firebasestorage.app”,
   messagingSenderId:”233247197134”,
   appId:”1:233247197134:web:ef0f5d143b0fbe9e26cd9f”
-};
-
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
-const familyRef=doc(db,'families','selina');
-const peopleCol=collection(familyRef,'people');
+});
+const db=firebase.firestore();
+const peopleCol=db.collection('families').doc('selina').collection('people');
+const personRef=id=>peopleCol.doc(String(id));
 
 const el=id=>document.getElementById(id);
 
@@ -202,11 +199,11 @@ function esc(s){return(s||'').replace(/[&<>”]/g,c=>({'&':'&amp;','<':'&lt;','>
 // Strip photo before writing — base64 images live in localStorage only
 function toDoc(p){const{photo,...data}=p;return data;}
 
-async function saveToDB(p){await setDoc(doc(peopleCol,String(p.id)),toDoc(p));}
+async function saveToDB(p){await personRef(p.id).set(toDoc(p));}
 
 async function seedDefaults(){
-  const batch=writeBatch(db);
-  DEFAULT_FAMILY.forEach(p=>batch.set(doc(peopleCol,String(p.id)),toDoc(p)));
+  const batch=db.batch();
+  DEFAULT_FAMILY.forEach(p=>batch.set(personRef(p.id),toDoc(p)));
   await batch.commit();
 }
 
@@ -218,7 +215,7 @@ function withPhoto(p){
 
 // Real-time listener — the single source of truth
 el('tree').innerHTML='<div class=”empty”>Connecting…</div>';
-onSnapshot(peopleCol,snapshot=>{
+peopleCol.onSnapshot(snapshot=>{
   if(snapshot.empty){seedDefaults();return;}
   family=snapshot.docs.map(d=>withPhoto(d.data()));
   if(selectedId&&!byId(selectedId)){selectedId=null;el('editor').hidden=true;}
@@ -312,9 +309,9 @@ async function deleteMember(){
   const kids=childrenOf(p.id);
   const msg=kids.length?('Delete '+p.name+'? Their '+kids.length+' child(ren) will move up to the parent above.'):('Delete '+p.name+'?');
   if(!confirm(msg))return;
-  const batch=writeBatch(db);
-  for(const c of kids)batch.set(doc(peopleCol,String(c.id)),toDoc({...c,parentId:p.parentId}));
-  batch.delete(doc(peopleCol,String(p.id)));
+  const batch=db.batch();
+  for(const c of kids)batch.set(personRef(c.id),toDoc({...c,parentId:p.parentId}));
+  batch.delete(personRef(p.id));
   localStorage.removeItem('photo_'+p.id);
   selectedId=null;el('editor').hidden=true;
   await batch.commit();
@@ -348,10 +345,10 @@ async function importData(e){
     try{
       const data=JSON.parse(ev.target.result);
       if(!Array.isArray(data))throw 0;
-      const existing=await getDocs(peopleCol);
-      const batch=writeBatch(db);
+      const existing=await peopleCol.get();
+      const batch=db.batch();
       existing.forEach(d=>batch.delete(d.ref));
-      data.forEach(p=>batch.set(doc(peopleCol,String(p.id)),toDoc(p)));
+      data.forEach(p=>batch.set(personRef(p.id),toDoc(p)));
       await batch.commit();
       selectedId=null;collapsed.clear();el('editor').hidden=true;
     }catch(err){alert('That file is not a valid family-data.json export.');}
