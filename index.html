@@ -175,6 +175,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
   }
   .fab:hover{background:var(--primary-h)}
 
+  /* .m.hidden beats .m{display:inline-flex!important} via higher specificity */
+  .m.hidden{display:none!important}
+
   /* Bigger touch targets in list */
   .pi{padding:10px 10px;min-height:52px}
   .br button{min-height:40px;flex:1}
@@ -466,13 +469,13 @@ function switchTab(tab) {
     canvas.classList.add('tab-active');
     document.getElementById('tabTree').classList.add('active');
     document.getElementById('tabPeople').classList.remove('active');
-    if (fabBtn) fabBtn.style.display = '';
+    if (fabBtn) fabBtn.classList.remove('hidden');
   } else {
     canvas.classList.remove('tab-active');
     sidebar.classList.add('tab-active');
     document.getElementById('tabPeople').classList.add('active');
     document.getElementById('tabTree').classList.remove('active');
-    if (fabBtn) fabBtn.style.display = 'none';
+    if (fabBtn) fabBtn.classList.add('hidden');
   }
 }
 
