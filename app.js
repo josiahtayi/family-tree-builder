@@ -233,9 +233,9 @@ function closeEditor(){
 
 // ── Diagram layout constants ──────────────────────────────────────────────────
 
-const NW=110;  // slot width per person (px)
-const NH=96;   // node visual height, used for SVG connector anchor
-const RH=158;  // vertical distance between generation rows
+const NW=124;  // slot width per person (px)
+const NH=116;  // node visual height, used for SVG connector anchor
+const RH=180;  // vertical distance between generation rows
 const PAD=24;  // canvas edge padding
 const AV_R=23; // avatar radius (half of 46px avatar)
 
