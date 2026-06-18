@@ -233,9 +233,9 @@ function closeEditor(){
 
 // ── Diagram layout constants ──────────────────────────────────────────────────
 
-const NW=124;  // slot width per person (px)
-const NH=116;  // node visual height, used for SVG connector anchor
-const RH=180;  // vertical distance between generation rows
+const NW=130;  // slot width per person (px)
+const NH=134;  // node visual height, used for SVG connector anchor
+const RH=196;  // vertical distance between generation rows
 const PAD=24;  // canvas edge padding
 const AV_R=23; // avatar radius (half of 46px avatar)
 
@@ -702,7 +702,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .pt-couple{display:flex;align-items:center;gap:5px;background:#f5f0e8;border:1.5px solid #d4c5b0;border-radius:7px;padding:7px 9px;}
 .pt-person{display:flex;flex-direction:column;align-items:center;gap:3px;}
 .pt-person.dec{opacity:.6;}
-.pt-av{width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid #c8b8a2;display:block;}
+.pt-av{width:44px;height:54px;border-radius:7px;object-fit:contain;background:#f0ebe0;border:1.5px solid #c8b8a2;display:block;}
 .pt-ini{background:#6b4f3a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;}
 .pt-nm{font-size:9.5px;font-weight:600;text-align:center;max-width:70px;line-height:1.3;}
 .pt-amp{font-size:9px;color:#9a9388;align-self:center;padding:0 1px;}
