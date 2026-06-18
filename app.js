@@ -12,7 +12,8 @@ const peopleCol=db.collection('families').doc('selina').collection('people');
 const personRef=id=>peopleCol.doc(String(id));
 
 const EDITORS=['machikozinvestments@gmail.com','davidtayi19@gmail.com'];
-let currentUser=null,isEditor=false;
+const SUPER_ADMIN='davidtayi19@gmail.com';
+let currentUser=null,isEditor=false,isSuperAdmin=false;
 
 function applyAuthState(){
   const signedIn=!!currentUser;
@@ -24,6 +25,8 @@ function applyAuthState(){
   const editEls=['addBtn','saveBtn','deleteBtn','ePhotoInput','ePhotoRemove',
                  'eSpousePhotoInput','eSpousePhotoRemove','backupBtn'];
   editEls.forEach(id=>{const e=el(id);if(e)e.hidden=!isEditor||e._forceHidden;});
+  const importWrap=el('importWrap');
+  if(importWrap)importWrap.hidden=!isSuperAdmin;
   el('eName').readOnly=!isEditor;
   el('eSpouse').readOnly=!isEditor;
   el('eDeceased').disabled=!isEditor;
@@ -45,6 +48,7 @@ function signOutUser(){auth.signOut();}
 auth.onAuthStateChanged(user=>{
   currentUser=user;
   isEditor=!!(user&&EDITORS.includes(user.email));
+  isSuperAdmin=!!(user&&user.email===SUPER_ADMIN);
   applyAuthState();
 });
 
@@ -447,9 +451,11 @@ async function saveMember(){
   const spDec=el('eSpouseDeceased').checked;
   if(spName){
     const spPhoto=p.spouse?.photo||null;
+    const spPhotoHD=p.spouse?.photoHD||null;
     p.spouse={name:spName};
     if(spDec)p.spouse.deceased=true;
     if(spPhoto)p.spouse.photo=spPhoto;
+    if(spPhotoHD)p.spouse.photoHD=spPhotoHD;
   }else{delete p.spouse;}
   p.deceased=el('eDeceased').checked;
   p.parentId=el('eParent').value||null;

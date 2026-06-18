@@ -16,8 +16,10 @@
     <div class="search-wrap"><input id="search" placeholder="Search names…"><button type="button" class="search-clear" id="searchClear" hidden>✕</button></div>
     <div class="row gap">
       <button type="button" class="btn grow" id="exportBtn">Download</button>
-      <button type="button" class="btn grow" id="importBtn">Load data</button>
-      <input type="file" id="importFile" accept="application/json" hidden>
+      <div id="importWrap" class="grow" hidden>
+        <button type="button" class="btn btn-full" id="importBtn">Load data</button>
+        <input type="file" id="importFile" accept="application/json" hidden>
+      </div>
     </div>
     <div class="row"><button type="button" class="btn btn-full" id="backupBtn">Backup photos</button></div>
     <div class="editor" id="editor" hidden>
