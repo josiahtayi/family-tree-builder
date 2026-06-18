@@ -92,7 +92,7 @@ const DEFAULT_FAMILY=[
 {"id":"2.8.3","name":"Ashton","parentId":"2.8"}
 ];
 
-let family=[],selectedId=null,collapsed=new Set(),term='';
+let family=[],selectedId=null,collapsed=new Set(),term='',migrationDone=false;
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
@@ -166,6 +166,7 @@ peopleCol.onSnapshot(snapshot=>{
   family=snapshot.docs.map(d=>withPhoto(d.data()));
   if(selectedId&&!byId(selectedId)){selectedId=null;el('editor').hidden=true;}
   render();
+  if(!migrationDone){migrationDone=true;migrateLocalPhotos();}
 },()=>{el('tree').innerHTML='<div class="empty">Connection error — please refresh.</div>';});
 
 // ── Render ────────────────────────────────────────────────────────────────────
@@ -473,6 +474,28 @@ async function removePhoto(){
   try{await saveToDB(p);showSaved();}
   catch(e){showSaveError();}
   openEditor();renderTree();
+}
+
+// ── Photo migration (localStorage → Firebase Storage) ────────────────────────
+
+async function migrateLocalPhotos(){
+  const candidates=family.filter(p=>!p.photo&&localStorage.getItem('photo_'+p.id));
+  if(!candidates.length)return;
+  let failed=0;
+  for(const p of candidates){
+    const dataUrl=localStorage.getItem('photo_'+p.id);
+    try{
+      const res=await fetch(dataUrl);
+      const blob=await res.blob();
+      const snap=await photoRef(p.id).put(blob);
+      const url=await snap.ref.getDownloadURL();
+      p.photo=url;
+      await saveToDB(p);
+      localStorage.removeItem('photo_'+p.id);
+    }catch(e){failed++;}
+  }
+  if(failed)toast(failed+' photo(s) could not be uploaded — try refreshing','err');
+  else renderTree();
 }
 
 // ── Export / Import ───────────────────────────────────────────────────────────
