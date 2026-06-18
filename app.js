@@ -626,12 +626,34 @@ function ptNodeHtml(p,people){
 
 function ptTitle(p){return p.name+(p.spouse?` & ${p.spouse.name}`:'')+' Family';}
 
+const PT_TREE_SVG=`<svg class="pt-bg-tree" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420" aria-hidden="true">
+  <rect x="133" y="295" width="34" height="115" rx="5" fill="#5c3d1e"/>
+  <rect x="147" y="175" width="6" height="130" fill="#5c3d1e"/>
+  <path d="M150 240 Q95 215 52 178" stroke="#5c3d1e" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M150 240 Q205 215 248 178" stroke="#5c3d1e" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M85 205 Q62 178 46 148" stroke="#5c3d1e" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M215 205 Q238 178 254 148" stroke="#5c3d1e" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M150 200 Q130 168 118 138" stroke="#5c3d1e" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M150 200 Q170 168 182 138" stroke="#5c3d1e" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <circle cx="150" cy="130" r="72" fill="#3a6b30"/>
+  <circle cx="68"  cy="148" r="50" fill="#3a6b30"/>
+  <circle cx="232" cy="148" r="50" fill="#3a6b30"/>
+  <circle cx="44"  cy="118" r="38" fill="#4a8a3e"/>
+  <circle cx="256" cy="118" r="38" fill="#4a8a3e"/>
+  <circle cx="115" cy="98"  r="45" fill="#4a8a3e"/>
+  <circle cx="185" cy="98"  r="45" fill="#4a8a3e"/>
+  <circle cx="150" cy="72"  r="52" fill="#5aaa4c"/>
+  <circle cx="150" cy="46"  r="38" fill="#6abf5a"/>
+</svg>`;
+
 const PT_CSS=`
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#fff;color:#2b2b2b;}
-.pt-page{display:flex;flex-direction:column;align-items:center;padding:14px 0;}
+.pt-page{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;padding:14px 0;}
+.pt-brand{font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#8B6B3D;opacity:.45;margin-bottom:6px;}
 .pt-title{font-size:15px;font-weight:700;margin-bottom:20px;color:#3a2e24;letter-spacing:.2px;}
-.pt-tree{display:flex;justify-content:center;}
+.pt-bg-tree{position:absolute;bottom:-10px;right:-10px;width:220px;height:308px;opacity:.07;pointer-events:none;}
+.pt-tree{display:flex;justify-content:center;position:relative;z-index:1;}
 .pt-unit{display:flex;flex-direction:column;align-items:center;}
 .pt-couple{display:flex;align-items:center;gap:5px;background:#f5f0e8;border:1.5px solid #d4c5b0;border-radius:7px;padding:7px 9px;}
 .pt-person{display:flex;flex-direction:column;align-items:center;gap:3px;}
@@ -665,7 +687,7 @@ function printFamilyTrees(){
   if(!root){toast('No family data to print','err');return;}
   function section(rootId,maxDepth,title){
     const people=ptCollect(rootId,maxDepth);
-    return`<section class="pt-page"><h2 class="pt-title">${esc(title)}</h2><div class="pt-tree">${ptNodeHtml(byId(rootId),people)}</div></section>`;
+    return`<section class="pt-page">${PT_TREE_SVG}<div class="pt-brand">Tayi Family Tree</div><h2 class="pt-title">${esc(title)}</h2><div class="pt-tree">${ptNodeHtml(byId(rootId),people)}</div></section>`;
   }
   let html=section(root.id,1,ptTitle(root)+' — Family Tree');
   childrenOf(root.id).forEach(c=>html+=section(c.id,99,ptTitle(c)+' — Family Tree'));
@@ -683,6 +705,8 @@ function printFullTree(){
   const heading=esc(root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree');
   const body=`
     <div class="pt-page">
+      ${PT_TREE_SVG}
+      <div class="pt-brand poster-brand">Tayi Family Tree</div>
       <h2 class="pt-title poster-title">${heading}</h2>
       <div class="pt-tree">${ptNodeHtml(root,people)}</div>
     </div>
@@ -690,7 +714,9 @@ function printFullTree(){
   `;
   const css=`
     @page{size:auto;margin:15mm;}
-    .poster-title{font-size:20px;margin-bottom:28px;}
+    .poster-brand{font-size:13px;letter-spacing:5px;margin-bottom:10px;}
+    .poster-title{font-size:22px;margin-bottom:32px;}
+    .pt-bg-tree{width:320px;height:448px;opacity:.06;}
     .pt-hint{margin-top:24px;font-size:11px;color:#9a9388;text-align:center;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6;}
     @media print{.pt-hint{display:none;}}
   `;
