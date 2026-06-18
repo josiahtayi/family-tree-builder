@@ -9,8 +9,6 @@ firebase.initializeApp({
 const db=firebase.firestore();
 const peopleCol=db.collection('families').doc('selina').collection('people');
 const personRef=id=>peopleCol.doc(String(id));
-const storage=firebase.storage();
-const photoRef=id=>storage.ref('photos/'+id);
 
 const el=id=>document.getElementById(id);
 
@@ -139,12 +137,7 @@ function showSaveError(){
 
 // ── Firestore helpers ─────────────────────────────────────────────────────────
 
-function toDoc(p){
-  const doc={...p};
-  // Never write base64 data URLs to Firestore (migration safety net)
-  if(doc.photo&&doc.photo.startsWith('data:'))delete doc.photo;
-  return doc;
-}
+function toDoc(p){return{...p};}
 async function saveToDB(p){await personRef(p.id).set(toDoc(p));}
 async function seedDefaults(){
   const batch=db.batch();
@@ -442,33 +435,47 @@ async function deleteMember(){
   batch.delete(personRef(p.id));
   selectedId=null;el('editor').hidden=true;
   await batch.commit();
-  try{await photoRef(p.id).delete();}catch(e){/* no photo in Storage — ignore */}
   localStorage.removeItem('photo_'+p.id);
   toast(name+' removed');
 }
 
 // ── Photos ────────────────────────────────────────────────────────────────────
 
+async function compressImage(src){
+  const blobUrl=src instanceof File?URL.createObjectURL(src):null;
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      if(blobUrl)URL.revokeObjectURL(blobUrl);
+      const scale=Math.min(1,300/Math.max(img.width,img.height));
+      const w=Math.round(img.width*scale),h=Math.round(img.height*scale);
+      const c=document.createElement('canvas');
+      c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(c.toDataURL('image/jpeg',0.72));
+    };
+    img.onerror=()=>{if(blobUrl)URL.revokeObjectURL(blobUrl);reject(new Error('load'));};
+    img.src=blobUrl||src;
+  });
+}
+
 async function onPhoto(e){
   const f=e.target.files[0];if(!f)return;
   const p=byId(selectedId);if(!p)return;
   showSaving();
   try{
-    const snap=await photoRef(p.id).put(f);
-    const url=await snap.ref.getDownloadURL();
-    p.photo=url;
+    p.photo=await compressImage(f);
     await saveToDB(p);
-    showSaved();
-    openEditor();renderTree();
+    showSaved();openEditor();renderTree();
   }catch(err){
-    showSaveError();toast('Photo upload failed — check your connection','err');
+    showSaveError();toast('Photo upload failed','err');
   }
   e.target.value='';
 }
+
 async function removePhoto(){
   const p=byId(selectedId);if(!p)return;
   showSaving();
-  try{await photoRef(p.id).delete();}catch(e){/* not in Storage — ignore */}
   localStorage.removeItem('photo_'+p.id);
   delete p.photo;
   try{await saveToDB(p);showSaved();}
@@ -476,25 +483,20 @@ async function removePhoto(){
   openEditor();renderTree();
 }
 
-// ── Photo migration (localStorage → Firebase Storage) ────────────────────────
+// ── Photo migration (localStorage → Firestore) ───────────────────────────────
 
 async function migrateLocalPhotos(){
   const candidates=family.filter(p=>!p.photo&&localStorage.getItem('photo_'+p.id));
   if(!candidates.length)return;
   let failed=0;
   for(const p of candidates){
-    const dataUrl=localStorage.getItem('photo_'+p.id);
     try{
-      const res=await fetch(dataUrl);
-      const blob=await res.blob();
-      const snap=await photoRef(p.id).put(blob);
-      const url=await snap.ref.getDownloadURL();
-      p.photo=url;
+      p.photo=await compressImage(localStorage.getItem('photo_'+p.id));
       await saveToDB(p);
       localStorage.removeItem('photo_'+p.id);
     }catch(e){failed++;}
   }
-  if(failed)toast(failed+' photo(s) could not be uploaded — try refreshing','err');
+  if(failed)toast(failed+' photo(s) could not be migrated — try refreshing','err');
   else renderTree();
 }
 
