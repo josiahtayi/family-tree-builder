@@ -34,7 +34,11 @@ function applyAuthState(){
 
 function signInWithGoogle(){
   auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-    .catch(()=>toast('Sign-in cancelled','err'));
+    .catch(err=>{
+      if(err.code==='auth/popup-closed-by-user'||err.code==='auth/cancelled-popup-request')return;
+      toast('Sign-in failed: '+err.message,'err');
+      console.error('Auth error:',err);
+    });
 }
 function signOutUser(){auth.signOut();}
 
