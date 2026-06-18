@@ -575,6 +575,92 @@ async function importData(e){
   r.readAsText(f);e.target.value='';
 }
 
+// ── Print ─────────────────────────────────────────────────────────────────────
+
+function printFamilyTrees(){
+  const root=roots()[0];
+  if(!root){toast('No family data to print','err');return;}
+
+  function collectSubtree(rootId,maxDepth){
+    const arr=[];
+    (function walk(id,d){
+      if(d>maxDepth)return;
+      const p=byId(id);if(!p)return;
+      arr.push(p);
+      childrenOf(id).forEach(c=>walk(c.id,d+1));
+    })(rootId,0);
+    return arr;
+  }
+
+  function av(name,photo){
+    if(photo)return`<img class="pt-av" src="${photo}" alt="${esc(name)}">`;
+    return`<div class="pt-av pt-ini">${esc(initials(name))}</div>`;
+  }
+
+  function personHtml(p,isSpouse){
+    return`<div class="pt-person${(isSpouse?p.deceased:p.deceased)?' dec':''}">
+      ${av(p.name,p.photo)}
+      <div class="pt-nm">${esc(p.name)}${p.deceased?' †':''}</div>
+    </div>`;
+  }
+
+  function nodeHtml(p,people){
+    const kids=people.filter(x=>x.parentId===p.id);
+    let h=`<div class="pt-unit"><div class="pt-couple">${personHtml(p,false)}`;
+    if(p.spouse)h+=`<div class="pt-amp">&amp;</div>${personHtml(p.spouse,true)}`;
+    h+=`</div>`;
+    if(kids.length){
+      h+=`<div class="pt-down"></div><div class="pt-row">`;
+      kids.forEach(k=>h+=`<div class="pt-col">${nodeHtml(k,people)}</div>`);
+      h+=`</div>`;
+    }
+    h+=`</div>`;
+    return h;
+  }
+
+  function section(rootId,maxDepth,title){
+    const people=collectSubtree(rootId,maxDepth);
+    return`<section class="pt-page"><h2 class="pt-title">${esc(title)}</h2><div class="pt-tree">${nodeHtml(byId(rootId),people)}</div></section>`;
+  }
+
+  function treeTitle(p){return p.name+(p.spouse?` & ${p.spouse.name}`:'')+' — Family Tree';}
+
+  let html=section(root.id,1,treeTitle(root));
+  childrenOf(root.id).forEach(c=>html+=section(c.id,99,treeTitle(c)));
+
+  const css=`
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#fff;color:#2b2b2b;}
+@page{size:A4 landscape;margin:12mm;}
+.pt-page{page-break-after:always;display:flex;flex-direction:column;align-items:center;padding:14px 0;}
+.pt-page:last-child{page-break-after:auto;}
+.pt-title{font-size:15px;font-weight:700;margin-bottom:20px;color:#3a2e24;letter-spacing:.2px;}
+.pt-tree{display:flex;justify-content:center;}
+.pt-unit{display:flex;flex-direction:column;align-items:center;}
+.pt-couple{display:flex;align-items:center;gap:5px;background:#f5f0e8;border:1.5px solid #d4c5b0;border-radius:7px;padding:7px 9px;}
+.pt-person{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.pt-person.dec{opacity:.6;}
+.pt-av{width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid #c8b8a2;display:block;}
+.pt-ini{background:#6b4f3a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;}
+.pt-nm{font-size:9.5px;font-weight:600;text-align:center;max-width:70px;line-height:1.3;}
+.pt-amp{font-size:9px;color:#9a9388;align-self:center;padding:0 1px;}
+.pt-down{width:2px;height:16px;background:#b0a090;margin:0 auto;}
+.pt-row{display:flex;align-items:flex-start;justify-content:center;}
+.pt-col{display:flex;flex-direction:column;align-items:center;position:relative;padding:16px 5px 0;}
+.pt-col::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:#b0a090;}
+.pt-col:first-child::before{left:50%;}
+.pt-col:last-child::before{right:50%;}
+.pt-col:first-child:last-child::before{display:none;}
+.pt-col::after{content:'';position:absolute;top:0;left:50%;width:2px;height:16px;background:#b0a090;transform:translateX(-50%);}
+`;
+
+  const win=window.open('','_blank');
+  if(!win){toast('Allow pop-ups to use Print','err');return;}
+  win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Family Tree — Print</title><style>${css}</style></head><body>${html}</body></html>`);
+  win.document.close();
+  setTimeout(()=>{win.focus();win.print();},400);
+}
+
 // ── Expand / Collapse ─────────────────────────────────────────────────────────
 
 function expandAll(){collapsed.clear();renderTree();}
@@ -606,6 +692,7 @@ el('importBtn').addEventListener('click',()=>el('importFile').click());
 el('importFile').addEventListener('change',importData);
 el('expandBtn').addEventListener('click',expandAll);
 el('collapseBtn').addEventListener('click',collapseAll);
+el('printBtn').addEventListener('click',printFamilyTrees);
 
 // Auto-save: debounced for text fields, immediate for checkboxes/selects
 el('eName').addEventListener('input',debouncedSave);
