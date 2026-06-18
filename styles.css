@@ -47,6 +47,12 @@ input:focus,select:focus{outline:none;border-color:#6b4f3a;background:#fff;box-s
 .checks input{width:auto;cursor:pointer;}
 .hint{font-size:10.5px;color:#9a9388;margin-top:8px;line-height:1.45;}
 
+/* ── Auth ─────────────────────────────────────────────────────────────────── */
+.auth-row{margin-top:8px;display:flex;align-items:center;gap:8px;}
+.auth-email{font-size:11px;color:#7a7268;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn-link{background:none;border:none;cursor:pointer;font-size:11px;color:#6b4f3a;padding:0;text-decoration:underline;}
+.btn-link:hover{color:#3a2e24;}
+
 /* ── Search ───────────────────────────────────────────────────────────────── */
 .search-wrap{position:relative;margin-top:8px;}
 .search-wrap input{padding-right:28px;}

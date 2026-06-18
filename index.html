@@ -10,6 +10,8 @@
 <div class="app">
   <aside class="side">
     <div class="brand"><h1>Family Tree</h1><p id="stats"></p></div>
+    <div id="authSignIn" class="auth-row"><button type="button" class="btn btn-full" id="authSignInBtn">Sign in to edit</button></div>
+    <div id="authUser" class="auth-row" hidden><span class="auth-email" id="authEmail"></span><button type="button" class="btn-link" id="authSignOut">Sign out</button></div>
     <div class="row"><button type="button" class="btn primary btn-full" id="addBtn">+ Add member</button></div>
     <div class="search-wrap"><input id="search" placeholder="Search names…"><button type="button" class="search-clear" id="searchClear" hidden>✕</button></div>
     <div class="row gap">
@@ -17,10 +19,11 @@
       <button type="button" class="btn grow" id="importBtn">Load data</button>
       <input type="file" id="importFile" accept="application/json" hidden>
     </div>
+    <div class="row"><button type="button" class="btn btn-full" id="backupBtn">Backup photos</button></div>
     <div class="editor" id="editor" hidden>
       <div class="editor-handle"></div>
       <div class="editor-header">
-        <h2>Edit member</h2>
+        <h2 id="editor-header-label">Edit member</h2>
         <button class="icon-btn" id="closeEditor" title="Close (Esc)">✕</button>
       </div>
       <div class="photo">
@@ -60,6 +63,7 @@
 </div>
 <div id="editorBackdrop" class="editor-backdrop"></div>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 <script src="app.js"></script>
 </body>

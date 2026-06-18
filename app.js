@@ -7,8 +7,42 @@ firebase.initializeApp({
   appId:"1:233247197134:web:ef0f5d143b0fbe9e26cd9f"
 });
 const db=firebase.firestore();
+const auth=firebase.auth();
 const peopleCol=db.collection('families').doc('selina').collection('people');
 const personRef=id=>peopleCol.doc(String(id));
+
+const EDITORS=['machikozinvestments@gmail.com','davidtayi19@gmail.com'];
+let currentUser=null,isEditor=false;
+
+function applyAuthState(){
+  const signedIn=!!currentUser;
+  const email=currentUser?.email||'';
+  el('authSignIn').hidden=signedIn;
+  el('authUser').hidden=!signedIn;
+  el('authEmail').textContent=email;
+  // Show/hide editor controls
+  const editEls=['addBtn','saveBtn','deleteBtn','ePhotoInput','ePhotoRemove',
+                 'eSpousePhotoInput','eSpousePhotoRemove','backupBtn'];
+  editEls.forEach(id=>{const e=el(id);if(e)e.hidden=!isEditor||e._forceHidden;});
+  el('eName').readOnly=!isEditor;
+  el('eSpouse').readOnly=!isEditor;
+  el('eDeceased').disabled=!isEditor;
+  el('eSpouseDeceased').disabled=!isEditor;
+  el('eParent').disabled=!isEditor;
+  el('editor-header-label').textContent=isEditor?'Edit member':'View member';
+}
+
+function signInWithGoogle(){
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+    .catch(()=>toast('Sign-in cancelled','err'));
+}
+function signOutUser(){auth.signOut();}
+
+auth.onAuthStateChanged(user=>{
+  currentUser=user;
+  isEditor=!!(user&&EDITORS.includes(user.email));
+  applyAuthState();
+});
 
 const el=id=>document.getElementById(id);
 
@@ -559,6 +593,20 @@ async function migrateLocalPhotos(){
   else renderTree();
 }
 
+// ── Photo backup ─────────────────────────────────────────────────────────────
+
+function backupPhotos(){
+  const count=family.filter(p=>p.photo||p.photoHD||p.spouse?.photo||p.spouse?.photoHD).length;
+  if(!count){toast('No photos to back up','err');return;}
+  const date=new Date().toISOString().slice(0,10);
+  const blob=new Blob([JSON.stringify(family,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`family-backup-${date}.json`;
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
+  toast(`Backup saved — ${count} people with photos`);
+}
+
 // ── Export / Import ───────────────────────────────────────────────────────────
 
 function exportData(){
@@ -731,11 +779,14 @@ el('eSpousePhotoInput').addEventListener('change',onSpousePhoto);
 el('eSpousePhotoRemove').addEventListener('click',removeSpousePhoto);
 el('exportBtn').addEventListener('click',exportData);
 el('importBtn').addEventListener('click',()=>el('importFile').click());
+el('backupBtn').addEventListener('click',backupPhotos);
 el('importFile').addEventListener('change',importData);
 el('expandBtn').addEventListener('click',expandAll);
 el('collapseBtn').addEventListener('click',collapseAll);
 el('printBtn').addEventListener('click',printFamilyTrees);
 el('posterBtn').addEventListener('click',printFullTree);
+el('authSignInBtn').addEventListener('click',signInWithGoogle);
+el('authSignOut').addEventListener('click',signOutUser);
 
 // Auto-save: debounced for text fields, immediate for checkboxes/selects
 el('eName').addEventListener('input',debouncedSave);
