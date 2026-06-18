@@ -33,6 +33,12 @@
       <input id="eName">
       <label class="lbl">Spouse / partner</label>
       <input id="eSpouse" placeholder="(optional)">
+      <div class="photo" id="eSpousePhotoWrap" hidden>
+        <img id="eSpousePhoto" alt="" hidden>
+        <div id="eSpousePhotoFallback" class="avatar lg"></div>
+        <label class="btn primary file btn-full">Upload spouse photo<input type="file" id="eSpousePhotoInput" accept="image/*" hidden></label>
+        <button type="button" class="btn danger btn-full" id="eSpousePhotoRemove" hidden>Remove spouse photo</button>
+      </div>
       <label class="lbl">Parent</label>
       <select id="eParent"></select>
       <div class="checks"><label><input type="checkbox" id="eDeceased"> Deceased</label><label><input type="checkbox" id="eSpouseDeceased"> Spouse deceased</label></div>

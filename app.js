@@ -346,9 +346,15 @@ function renderTree(){
       spNode.className='tn tn-sp'+(isSelected?' tn-sel':'')+cls;
       spNode.style.cssText=`left:${sx-NW/2}px;top:${y}px;width:${NW}px`;
 
-      const spAv=document.createElement('div');
+      let spAv;
+      if(sp.photo){
+        spAv=document.createElement('img');
+        spAv.src=sp.photo;spAv.alt=sp.name;
+      }else{
+        spAv=document.createElement('div');
+        spAv.textContent=initials(sp.name);
+      }
       spAv.className='tn-av tn-sp-av'+(sp.deceased?' tn-av-dec':'');
-      spAv.textContent=initials(sp.name);
       spNode.appendChild(spAv);
 
       const spNm=document.createElement('div');spNm.className='tn-name';
@@ -385,6 +391,14 @@ function openEditor(){
   const img=el('ePhoto'),fb=el('ePhotoFallback'),rm=el('ePhotoRemove');
   if(p.photo){img.src=p.photo;img.hidden=false;fb.hidden=true;rm.hidden=false;}
   else{img.hidden=true;fb.hidden=false;fb.textContent=initials(p.name);rm.hidden=true;}
+  // Spouse photo section — only show when a spouse name exists
+  const sp=p.spouse;
+  el('eSpousePhotoWrap').hidden=!sp?.name;
+  if(sp?.name){
+    const sImg=el('eSpousePhoto'),sFb=el('eSpousePhotoFallback'),sRm=el('eSpousePhotoRemove');
+    if(sp.photo){sImg.src=sp.photo;sImg.hidden=false;sFb.hidden=true;sRm.hidden=false;}
+    else{sImg.hidden=true;sFb.hidden=false;sFb.textContent=initials(sp.name);sRm.hidden=true;}
+  }
 }
 
 async function saveMember(){
@@ -392,7 +406,12 @@ async function saveMember(){
   p.name=el('eName').value.trim()||'Unnamed';
   const spName=el('eSpouse').value.trim();
   const spDec=el('eSpouseDeceased').checked;
-  if(spName){p.spouse={name:spName};if(spDec)p.spouse.deceased=true;}else{delete p.spouse;}
+  if(spName){
+    const spPhoto=p.spouse?.photo||null;
+    p.spouse={name:spName};
+    if(spDec)p.spouse.deceased=true;
+    if(spPhoto)p.spouse.photo=spPhoto;
+  }else{delete p.spouse;}
   p.deceased=el('eDeceased').checked;
   p.parentId=el('eParent').value||null;
   showSaving();
@@ -483,6 +502,29 @@ async function removePhoto(){
   openEditor();renderTree();
 }
 
+async function onSpousePhoto(e){
+  const f=e.target.files[0];if(!f)return;
+  const p=byId(selectedId);if(!p||!p.spouse)return;
+  showSaving();
+  try{
+    p.spouse.photo=await compressImage(f);
+    await saveToDB(p);
+    showSaved();openEditor();renderTree();
+  }catch(err){
+    showSaveError();toast('Photo upload failed','err');
+  }
+  e.target.value='';
+}
+
+async function removeSpousePhoto(){
+  const p=byId(selectedId);if(!p||!p.spouse)return;
+  showSaving();
+  delete p.spouse.photo;
+  try{await saveToDB(p);showSaved();}
+  catch(e){showSaveError();}
+  openEditor();renderTree();
+}
+
 // ── Photo migration (localStorage → Firestore) ───────────────────────────────
 
 async function migrateLocalPhotos(){
@@ -557,6 +599,8 @@ el('deleteBtn').addEventListener('click',deleteMember);
 el('closeEditor').addEventListener('click',closeEditor);
 el('ePhotoInput').addEventListener('change',onPhoto);
 el('ePhotoRemove').addEventListener('click',removePhoto);
+el('eSpousePhotoInput').addEventListener('change',onSpousePhoto);
+el('eSpousePhotoRemove').addEventListener('click',removeSpousePhoto);
 el('exportBtn').addEventListener('click',exportData);
 el('importBtn').addEventListener('click',()=>el('importFile').click());
 el('importFile').addEventListener('change',importData);
