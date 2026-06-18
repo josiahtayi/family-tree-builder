@@ -619,6 +619,11 @@ function exportData(){
 
 async function importData(e){
   const f=e.target.files[0];if(!f)return;
+  const photoPeople=family.filter(p=>p.photo||p.photoHD||p.spouse?.photo||p.spouse?.photoHD).length;
+  const warn=photoPeople>0
+    ?`This will REPLACE all current data and permanently delete ${photoPeople} people's photos. Make sure you have a backup.\n\nContinue?`
+    :'This will REPLACE all current family data. Continue?';
+  if(!confirm(warn)){e.target.value='';return;}
   const r=new FileReader();
   r.onload=async ev=>{
     try{
