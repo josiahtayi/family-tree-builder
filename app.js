@@ -460,22 +460,31 @@ async function deleteMember(){
 
 // ── Photos ────────────────────────────────────────────────────────────────────
 
-async function compressImage(src){
+async function compressImage(src,maxSide=300,quality=0.72){
   const blobUrl=src instanceof File?URL.createObjectURL(src):null;
   return new Promise((resolve,reject)=>{
     const img=new Image();
     img.onload=()=>{
       if(blobUrl)URL.revokeObjectURL(blobUrl);
-      const scale=Math.min(1,300/Math.max(img.width,img.height));
+      const scale=Math.min(1,maxSide/Math.max(img.width,img.height));
       const w=Math.round(img.width*scale),h=Math.round(img.height*scale);
       const c=document.createElement('canvas');
       c.width=w;c.height=h;
       c.getContext('2d').drawImage(img,0,0,w,h);
-      resolve(c.toDataURL('image/jpeg',0.72));
+      resolve(c.toDataURL('image/jpeg',quality));
     };
     img.onerror=()=>{if(blobUrl)URL.revokeObjectURL(blobUrl);reject(new Error('load'));};
     img.src=blobUrl||src;
   });
+}
+
+async function bothSizes(src){
+  // Returns [thumbnail, hdVersion] — compress once per size
+  const [thumb,hd]=await Promise.all([
+    compressImage(src,300,0.72),
+    compressImage(src,800,0.90),
+  ]);
+  return[thumb,hd];
 }
 
 async function onPhoto(e){
@@ -483,7 +492,8 @@ async function onPhoto(e){
   const p=byId(selectedId);if(!p)return;
   showSaving();
   try{
-    p.photo=await compressImage(f);
+    const[thumb,hd]=await bothSizes(f);
+    p.photo=thumb;p.photoHD=hd;
     await saveToDB(p);
     showSaved();openEditor();renderTree();
   }catch(err){
@@ -496,7 +506,7 @@ async function removePhoto(){
   const p=byId(selectedId);if(!p)return;
   showSaving();
   localStorage.removeItem('photo_'+p.id);
-  delete p.photo;
+  delete p.photo;delete p.photoHD;
   try{await saveToDB(p);showSaved();}
   catch(e){showSaveError();}
   openEditor();renderTree();
@@ -507,7 +517,8 @@ async function onSpousePhoto(e){
   const p=byId(selectedId);if(!p||!p.spouse)return;
   showSaving();
   try{
-    p.spouse.photo=await compressImage(f);
+    const[thumb,hd]=await bothSizes(f);
+    p.spouse.photo=thumb;p.spouse.photoHD=hd;
     await saveToDB(p);
     showSaved();openEditor();renderTree();
   }catch(err){
@@ -519,7 +530,7 @@ async function onSpousePhoto(e){
 async function removeSpousePhoto(){
   const p=byId(selectedId);if(!p||!p.spouse)return;
   showSaving();
-  delete p.spouse.photo;
+  delete p.spouse.photo;delete p.spouse.photoHD;
   try{await saveToDB(p);showSaved();}
   catch(e){showSaveError();}
   openEditor();renderTree();
@@ -536,7 +547,8 @@ async function migrateLocalPhotos(){
     try{
       // p.photo===local means withPhoto() pulled it from localStorage — needs saving to Firestore
       if(!p.photo||p.photo===local){
-        p.photo=await compressImage(local);
+        const[thumb,hd]=await bothSizes(local);
+        p.photo=thumb;p.photoHD=hd;
         await saveToDB(p);
       }
       localStorage.removeItem('photo_'+p.id);
@@ -575,65 +587,49 @@ async function importData(e){
   r.readAsText(f);e.target.value='';
 }
 
-// ── Print ─────────────────────────────────────────────────────────────────────
+// ── Print helpers (shared) ────────────────────────────────────────────────────
 
-function printFamilyTrees(){
-  const root=roots()[0];
-  if(!root){toast('No family data to print','err');return;}
+function ptCollect(rootId,maxDepth){
+  const arr=[];
+  (function walk(id,d){
+    if(d>maxDepth)return;
+    const p=byId(id);if(!p)return;
+    arr.push(p);
+    childrenOf(id).forEach(c=>walk(c.id,d+1));
+  })(rootId,0);
+  return arr;
+}
 
-  function collectSubtree(rootId,maxDepth){
-    const arr=[];
-    (function walk(id,d){
-      if(d>maxDepth)return;
-      const p=byId(id);if(!p)return;
-      arr.push(p);
-      childrenOf(id).forEach(c=>walk(c.id,d+1));
-    })(rootId,0);
-    return arr;
-  }
+function ptAv(name,photo,photoHD){
+  const src=photoHD||photo;
+  if(src)return`<img class="pt-av" src="${src}" alt="${esc(name)}">`;
+  return`<div class="pt-av pt-ini">${esc(initials(name))}</div>`;
+}
 
-  function av(name,photo){
-    if(photo)return`<img class="pt-av" src="${photo}" alt="${esc(name)}">`;
-    return`<div class="pt-av pt-ini">${esc(initials(name))}</div>`;
-  }
+function ptPersonHtml(p){
+  return`<div class="pt-person${p.deceased?' dec':''}">${ptAv(p.name,p.photo,p.photoHD)}<div class="pt-nm">${esc(p.name)}${p.deceased?' †':''}</div></div>`;
+}
 
-  function personHtml(p,isSpouse){
-    return`<div class="pt-person${(isSpouse?p.deceased:p.deceased)?' dec':''}">
-      ${av(p.name,p.photo)}
-      <div class="pt-nm">${esc(p.name)}${p.deceased?' †':''}</div>
-    </div>`;
-  }
-
-  function nodeHtml(p,people){
-    const kids=people.filter(x=>x.parentId===p.id);
-    let h=`<div class="pt-unit"><div class="pt-couple">${personHtml(p,false)}`;
-    if(p.spouse)h+=`<div class="pt-amp">&amp;</div>${personHtml(p.spouse,true)}`;
+function ptNodeHtml(p,people){
+  const kids=people.filter(x=>x.parentId===p.id);
+  let h=`<div class="pt-unit"><div class="pt-couple">${ptPersonHtml(p)}`;
+  if(p.spouse)h+=`<div class="pt-amp">&amp;</div>${ptPersonHtml(p.spouse)}`;
+  h+=`</div>`;
+  if(kids.length){
+    h+=`<div class="pt-down"></div><div class="pt-row">`;
+    kids.forEach(k=>h+=`<div class="pt-col">${ptNodeHtml(k,people)}</div>`);
     h+=`</div>`;
-    if(kids.length){
-      h+=`<div class="pt-down"></div><div class="pt-row">`;
-      kids.forEach(k=>h+=`<div class="pt-col">${nodeHtml(k,people)}</div>`);
-      h+=`</div>`;
-    }
-    h+=`</div>`;
-    return h;
   }
+  h+=`</div>`;
+  return h;
+}
 
-  function section(rootId,maxDepth,title){
-    const people=collectSubtree(rootId,maxDepth);
-    return`<section class="pt-page"><h2 class="pt-title">${esc(title)}</h2><div class="pt-tree">${nodeHtml(byId(rootId),people)}</div></section>`;
-  }
+function ptTitle(p){return p.name+(p.spouse?` & ${p.spouse.name}`:'')+' Family';}
 
-  function treeTitle(p){return p.name+(p.spouse?` & ${p.spouse.name}`:'')+' — Family Tree';}
-
-  let html=section(root.id,1,treeTitle(root));
-  childrenOf(root.id).forEach(c=>html+=section(c.id,99,treeTitle(c)));
-
-  const css=`
+const PT_CSS=`
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#fff;color:#2b2b2b;}
-@page{size:A4 landscape;margin:12mm;}
-.pt-page{page-break-after:always;display:flex;flex-direction:column;align-items:center;padding:14px 0;}
-.pt-page:last-child{page-break-after:auto;}
+.pt-page{display:flex;flex-direction:column;align-items:center;padding:14px 0;}
 .pt-title{font-size:15px;font-weight:700;margin-bottom:20px;color:#3a2e24;letter-spacing:.2px;}
 .pt-tree{display:flex;justify-content:center;}
 .pt-unit{display:flex;flex-direction:column;align-items:center;}
@@ -654,11 +650,51 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .pt-col::after{content:'';position:absolute;top:0;left:50%;width:2px;height:16px;background:#b0a090;transform:translateX(-50%);}
 `;
 
+function ptOpenWindow(title,body,extraCss){
   const win=window.open('','_blank');
-  if(!win){toast('Allow pop-ups to use Print','err');return;}
-  win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Family Tree — Print</title><style>${css}</style></head><body>${html}</body></html>`);
+  if(!win){toast('Allow pop-ups to use Print','err');return null;}
+  win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><style>${PT_CSS}${extraCss||''}</style></head><body>${body}</body></html>`);
   win.document.close();
-  setTimeout(()=>{win.focus();win.print();},400);
+  return win;
+}
+
+// ── Print 9 sub-trees ─────────────────────────────────────────────────────────
+
+function printFamilyTrees(){
+  const root=roots()[0];
+  if(!root){toast('No family data to print','err');return;}
+  function section(rootId,maxDepth,title){
+    const people=ptCollect(rootId,maxDepth);
+    return`<section class="pt-page"><h2 class="pt-title">${esc(title)}</h2><div class="pt-tree">${ptNodeHtml(byId(rootId),people)}</div></section>`;
+  }
+  let html=section(root.id,1,ptTitle(root)+' — Family Tree');
+  childrenOf(root.id).forEach(c=>html+=section(c.id,99,ptTitle(c)+' — Family Tree'));
+  const css=`@page{size:A4 landscape;margin:12mm;}.pt-page{page-break-after:always;}.pt-page:last-child{page-break-after:auto;}`;
+  const win=ptOpenWindow('Family Tree — Print',html,css);
+  if(win)setTimeout(()=>{win.focus();win.print();},400);
+}
+
+// ── Print full family poster ──────────────────────────────────────────────────
+
+function printFullTree(){
+  const root=roots()[0];
+  if(!root){toast('No family data to print','err');return;}
+  const people=ptCollect(root.id,99);
+  const heading=esc(root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree');
+  const body=`
+    <div class="pt-page">
+      <h2 class="pt-title poster-title">${heading}</h2>
+      <div class="pt-tree">${ptNodeHtml(root,people)}</div>
+    </div>
+    <p class="pt-hint">To print as a poster: press Ctrl+P (or Cmd+P), choose <strong>Save as PDF</strong>, then take the PDF to a print shop and ask for large-format printing.</p>
+  `;
+  const css=`
+    @page{size:auto;margin:15mm;}
+    .poster-title{font-size:20px;margin-bottom:28px;}
+    .pt-hint{margin-top:24px;font-size:11px;color:#9a9388;text-align:center;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6;}
+    @media print{.pt-hint{display:none;}}
+  `;
+  ptOpenWindow('Family Tree — Poster',body,css);
 }
 
 // ── Expand / Collapse ─────────────────────────────────────────────────────────
@@ -693,6 +729,7 @@ el('importFile').addEventListener('change',importData);
 el('expandBtn').addEventListener('click',expandAll);
 el('collapseBtn').addEventListener('click',collapseAll);
 el('printBtn').addEventListener('click',printFamilyTrees);
+el('posterBtn').addEventListener('click',printFullTree);
 
 // Auto-save: debounced for text fields, immediate for checkboxes/selects
 el('eName').addEventListener('input',debouncedSave);
