@@ -42,6 +42,7 @@ input:focus,select:focus{outline:none;border-color:#6b4f3a;background:#fff;box-s
 .avatar{flex-shrink:0;width:34px;height:34px;border-radius:50%;background:#6b4f3a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;object-fit:cover;}
 .avatar.lg{width:80px;height:80px;font-size:22px;}
 .file{display:inline-flex;align-items:center;justify-content:center;}
+.file input[type="file"]{display:none;}
 .checks{display:flex;gap:12px;margin-top:8px;font-size:12px;color:#3a342c;}
 .checks label{display:flex;align-items:center;gap:5px;cursor:pointer;}
 .checks input{width:auto;cursor:pointer;}
