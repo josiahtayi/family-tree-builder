@@ -486,13 +486,17 @@ async function removePhoto(){
 // ── Photo migration (localStorage → Firestore) ───────────────────────────────
 
 async function migrateLocalPhotos(){
-  const candidates=family.filter(p=>!p.photo&&localStorage.getItem('photo_'+p.id));
+  const candidates=family.filter(p=>localStorage.getItem('photo_'+p.id));
   if(!candidates.length)return;
   let failed=0;
   for(const p of candidates){
+    const local=localStorage.getItem('photo_'+p.id);
     try{
-      p.photo=await compressImage(localStorage.getItem('photo_'+p.id));
-      await saveToDB(p);
+      // p.photo===local means withPhoto() pulled it from localStorage — needs saving to Firestore
+      if(!p.photo||p.photo===local){
+        p.photo=await compressImage(local);
+        await saveToDB(p);
+      }
       localStorage.removeItem('photo_'+p.id);
     }catch(e){failed++;}
   }
