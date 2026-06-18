@@ -279,7 +279,8 @@ function renderTree(){
     const barY=py+NH+(RH-NH)*0.42;
     addLine(svg,cx,py+NH,cx,barY);
     const cxs=kids.map(k=>pos[k.id].cx);
-    if(kids.length>1)addLine(svg,Math.min(...cxs),barY,Math.max(...cxs),barY);
+    const barL=Math.min(cx,...cxs),barR=Math.max(cx,...cxs);
+    if(barL<barR)addLine(svg,barL,barY,barR,barY);
     for(const k of kids)addLine(svg,pos[k.id].cx,barY,pos[k.id].cx,pos[k.id].y);
   }
 
@@ -626,33 +627,13 @@ function ptNodeHtml(p,people){
 
 function ptTitle(p){return p.name+(p.spouse?` & ${p.spouse.name}`:'')+' Family';}
 
-const PT_TREE_SVG=`<svg class="pt-bg-tree" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420" aria-hidden="true">
-  <rect x="133" y="295" width="34" height="115" rx="5" fill="#5c3d1e"/>
-  <rect x="147" y="175" width="6" height="130" fill="#5c3d1e"/>
-  <path d="M150 240 Q95 215 52 178" stroke="#5c3d1e" stroke-width="9" fill="none" stroke-linecap="round"/>
-  <path d="M150 240 Q205 215 248 178" stroke="#5c3d1e" stroke-width="9" fill="none" stroke-linecap="round"/>
-  <path d="M85 205 Q62 178 46 148" stroke="#5c3d1e" stroke-width="6" fill="none" stroke-linecap="round"/>
-  <path d="M215 205 Q238 178 254 148" stroke="#5c3d1e" stroke-width="6" fill="none" stroke-linecap="round"/>
-  <path d="M150 200 Q130 168 118 138" stroke="#5c3d1e" stroke-width="5" fill="none" stroke-linecap="round"/>
-  <path d="M150 200 Q170 168 182 138" stroke="#5c3d1e" stroke-width="5" fill="none" stroke-linecap="round"/>
-  <circle cx="150" cy="130" r="72" fill="#3a6b30"/>
-  <circle cx="68"  cy="148" r="50" fill="#3a6b30"/>
-  <circle cx="232" cy="148" r="50" fill="#3a6b30"/>
-  <circle cx="44"  cy="118" r="38" fill="#4a8a3e"/>
-  <circle cx="256" cy="118" r="38" fill="#4a8a3e"/>
-  <circle cx="115" cy="98"  r="45" fill="#4a8a3e"/>
-  <circle cx="185" cy="98"  r="45" fill="#4a8a3e"/>
-  <circle cx="150" cy="72"  r="52" fill="#5aaa4c"/>
-  <circle cx="150" cy="46"  r="38" fill="#6abf5a"/>
-</svg>`;
 
 const PT_CSS=`
-*{box-sizing:border-box;margin:0;padding:0;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#fff;color:#2b2b2b;}
 .pt-page{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;padding:14px 0;}
 .pt-brand{font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#8B6B3D;opacity:.45;margin-bottom:6px;}
 .pt-title{font-size:15px;font-weight:700;margin-bottom:20px;color:#3a2e24;letter-spacing:.2px;}
-.pt-bg-tree{position:absolute;bottom:-10px;right:-10px;width:220px;height:308px;opacity:.07;pointer-events:none;}
 .pt-tree{display:flex;justify-content:center;position:relative;z-index:1;}
 .pt-unit{display:flex;flex-direction:column;align-items:center;}
 .pt-couple{display:flex;align-items:center;gap:5px;background:#f5f0e8;border:1.5px solid #d4c5b0;border-radius:7px;padding:7px 9px;}
@@ -662,14 +643,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .pt-ini{background:#6b4f3a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;}
 .pt-nm{font-size:9.5px;font-weight:600;text-align:center;max-width:70px;line-height:1.3;}
 .pt-amp{font-size:9px;color:#9a9388;align-self:center;padding:0 1px;}
-.pt-down{width:2px;height:16px;background:#b0a090;margin:0 auto;}
+.pt-down{width:0;height:16px;border-left:2px solid #b0a090;margin:0 auto;}
 .pt-row{display:flex;align-items:flex-start;justify-content:center;}
 .pt-col{display:flex;flex-direction:column;align-items:center;position:relative;padding:16px 5px 0;}
-.pt-col::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:#b0a090;}
+.pt-col::before{content:'';position:absolute;top:0;left:0;right:0;border-top:2px solid #b0a090;}
 .pt-col:first-child::before{left:50%;}
 .pt-col:last-child::before{right:50%;}
 .pt-col:first-child:last-child::before{display:none;}
-.pt-col::after{content:'';position:absolute;top:0;left:50%;width:2px;height:16px;background:#b0a090;transform:translateX(-50%);}
+.pt-col::after{content:'';position:absolute;top:0;left:50%;width:0;height:16px;border-left:2px solid #b0a090;transform:translateX(-1px);}
 `;
 
 function ptOpenWindow(title,body,extraCss){
@@ -687,7 +668,7 @@ function printFamilyTrees(){
   if(!root){toast('No family data to print','err');return;}
   function section(rootId,maxDepth,title){
     const people=ptCollect(rootId,maxDepth);
-    return`<section class="pt-page">${PT_TREE_SVG}<div class="pt-brand">Tayi Family Tree</div><h2 class="pt-title">${esc(title)}</h2><div class="pt-tree">${ptNodeHtml(byId(rootId),people)}</div></section>`;
+    return`<section class="pt-page"><div class="pt-brand">Tayi Family Tree</div><h2 class="pt-title">${esc(title)}</h2><div class="pt-tree">${ptNodeHtml(byId(rootId),people)}</div></section>`;
   }
   let html=section(root.id,1,ptTitle(root)+' — Family Tree');
   childrenOf(root.id).forEach(c=>html+=section(c.id,99,ptTitle(c)+' — Family Tree'));
@@ -705,7 +686,6 @@ function printFullTree(){
   const heading=esc(root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree');
   const body=`
     <div class="pt-page">
-      ${PT_TREE_SVG}
       <div class="pt-brand poster-brand">Tayi Family Tree</div>
       <h2 class="pt-title poster-title">${heading}</h2>
       <div class="pt-tree">${ptNodeHtml(root,people)}</div>
