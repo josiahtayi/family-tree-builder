@@ -9,6 +9,8 @@ firebase.initializeApp({
 const db=firebase.firestore();
 const peopleCol=db.collection('families').doc('selina').collection('people');
 const personRef=id=>peopleCol.doc(String(id));
+const storage=firebase.storage();
+const photoRef=id=>storage.ref('photos/'+id);
 
 const el=id=>document.getElementById(id);
 
@@ -137,7 +139,12 @@ function showSaveError(){
 
 // ── Firestore helpers ─────────────────────────────────────────────────────────
 
-function toDoc(p){const{photo,...data}=p;return data;}
+function toDoc(p){
+  const doc={...p};
+  // Never write base64 data URLs to Firestore (migration safety net)
+  if(doc.photo&&doc.photo.startsWith('data:'))delete doc.photo;
+  return doc;
+}
 async function saveToDB(p){await personRef(p.id).set(toDoc(p));}
 async function seedDefaults(){
   const batch=db.batch();
@@ -145,8 +152,10 @@ async function seedDefaults(){
   await batch.commit();
 }
 function withPhoto(p){
-  const photo=localStorage.getItem('photo_'+p.id);
-  return photo?{...p,photo}:p;
+  // Fall back to localStorage for photos uploaded before cloud storage migration
+  if(p.photo)return p;
+  const local=localStorage.getItem('photo_'+p.id);
+  return local?{...p,photo:local}:p;
 }
 
 // ── Real-time listener ────────────────────────────────────────────────────────
@@ -430,32 +439,46 @@ async function deleteMember(){
   const batch=db.batch();
   for(const c of kids)batch.set(personRef(c.id),toDoc({...c,parentId:p.parentId}));
   batch.delete(personRef(p.id));
-  localStorage.removeItem('photo_'+p.id);
   selectedId=null;el('editor').hidden=true;
   await batch.commit();
+  try{await photoRef(p.id).delete();}catch(e){/* no photo in Storage — ignore */}
+  localStorage.removeItem('photo_'+p.id);
   toast(name+' removed');
 }
 
 // ── Photos ────────────────────────────────────────────────────────────────────
 
-function onPhoto(e){
+async function onPhoto(e){
   const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    const p=byId(selectedId);
-    if(p){localStorage.setItem('photo_'+p.id,ev.target.result);p.photo=ev.target.result;openEditor();renderTree();}
-  };
-  r.readAsDataURL(f);e.target.value='';
+  const p=byId(selectedId);if(!p)return;
+  showSaving();
+  try{
+    const snap=await photoRef(p.id).put(f);
+    const url=await snap.ref.getDownloadURL();
+    p.photo=url;
+    await saveToDB(p);
+    showSaved();
+    openEditor();renderTree();
+  }catch(err){
+    showSaveError();toast('Photo upload failed — check your connection','err');
+  }
+  e.target.value='';
 }
-function removePhoto(){
-  const p=byId(selectedId);
-  if(p){localStorage.removeItem('photo_'+p.id);delete p.photo;openEditor();renderTree();}
+async function removePhoto(){
+  const p=byId(selectedId);if(!p)return;
+  showSaving();
+  try{await photoRef(p.id).delete();}catch(e){/* not in Storage — ignore */}
+  localStorage.removeItem('photo_'+p.id);
+  delete p.photo;
+  try{await saveToDB(p);showSaved();}
+  catch(e){showSaveError();}
+  openEditor();renderTree();
 }
 
 // ── Export / Import ───────────────────────────────────────────────────────────
 
 function exportData(){
-  const data=family.map(({photo,...rest})=>rest);
+  const data=family.map(({photo:_photo,...rest})=>rest);
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='family-data.json';
   document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);

@@ -38,7 +38,7 @@
       <div class="checks"><label><input type="checkbox" id="eDeceased"> Deceased</label><label><input type="checkbox" id="eSpouseDeceased"> Spouse deceased</label></div>
       <div class="row gap"><button type="button" class="btn primary grow" id="saveBtn">Save</button><button type="button" class="btn danger" id="deleteBtn">Delete</button></div>
       <div id="saveStatus" class="save-status"></div>
-      <p class="hint">Changes are saved automatically. Photos are stored locally on your device only.</p>
+      <p class="hint">Changes are saved automatically. Photos are synced to the cloud.</p>
     </div>
   </aside>
   <main class="main">
@@ -53,6 +53,7 @@
 <div id="editorBackdrop" class="editor-backdrop"></div>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
