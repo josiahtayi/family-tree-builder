@@ -648,18 +648,13 @@ function ptCollect(rootId,maxDepth){
 
 function ptAv(name,photo,photoHD,pos){
   const src=photoHD||photo;
-  let style='';
-  if(pos&&typeof pos==='object'&&pos.x!=null&&pos.y!=null){
-    style=` style="object-position:${pos.x}% ${pos.y}%"`;
-  }
+  const style=(pos&&pos.x!=null&&pos.y!=null)?` style="object-position:${pos.x}% ${pos.y}%"`:'';
   if(src)return`<img class="pt-av" src="${src}" alt="${esc(name)}"${style}>`;
   return`<div class="pt-av pt-ini">${esc(initials(name))}</div>`;
 }
 
 function ptPersonHtml(p){
-  let pos=null;
-  if(p.photoPos){pos=p.photoPos;}
-  else if(p.pos){pos=p.pos;}
+  const pos=p.photoPos||p.pos;
   return`<div class="pt-person${p.deceased?' dec':''}">${ptAv(p.name,p.photo,p.photoHD,pos)}<div class="pt-nm">${esc(p.name)}${p.deceased?' †':''}</div></div>`;
 }
 
@@ -708,15 +703,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 function ptOpenWindow(title,body,extraCss){
   const win=window.open('','_blank');
   if(!win){toast('Allow pop-ups to use Print','err');return null;}
-  try{
-    const doc=win.document;
-    doc.open();
-    doc.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><style>${PT_CSS}${extraCss||''}</style></head><body>${body}</body></html>`);
-    doc.close();
-  }catch(e){
-    console.error('Write error:',e);
-    toast('Error writing to popup','err');
-  }
+  win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><style>${PT_CSS}${extraCss||''}</style></head><body>${body}</body></html>`);
+  win.document.close();
   return win;
 }
 
@@ -741,76 +729,49 @@ function printFamilyTrees(){
 function printFullTree(){
   const root=roots()[0];
   if(!root){toast('No family data to print','err');return;}
-  try{
-    console.log('Starting poster generation...');
-    const people=ptCollect(root.id,99);
-    console.log('Collected '+people.length+' people');
-    const heading=esc(root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree');
-    console.log('Generating tree HTML...');
-    let treeHtml;
-    try{
-      treeHtml=ptNodeHtml(root,people);
-      console.log('Tree HTML generated, length: '+treeHtml.length);
-    }catch(te){
-      console.error('ptNodeHtml error:',te);
-      toast('Error generating tree: '+te.message,'err');
-      return;
+  const people=ptCollect(root.id,99);
+  const heading=esc(root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree');
+  const body=`
+    <div class="poster-wrap">
+      <div class="poster-brand">TAYI FAMILY TREE</div>
+      <h1 class="poster-title">${heading}</h1>
+      <div class="poster-tree pt-tree">${ptNodeHtml(root,people)}</div>
+    </div>
+    <div class="pt-hint">
+      <strong>Print instructions:</strong> Press Ctrl+P → Save as PDF →
+      take PDF to print shop and request <strong>3m wide × 2m tall</strong> large-format print.
+    </div>
+  `;
+  const css=`
+    @page{size:3000mm 2000mm;margin:0;}
+    html,body{width:3000mm;height:2000mm;margin:0;padding:0;overflow:hidden;}
+    .poster-wrap{
+      width:3000mm;height:2000mm;
+      padding:60mm 80mm 40mm;
+      display:flex;flex-direction:column;align-items:center;
+      background:#fffdf9;
+      overflow:hidden;
     }
-    const body=`
-      <div class="poster-wrap">
-        <div class="poster-brand">TAYI FAMILY TREE</div>
-        <h1 class="poster-title">${heading}</h1>
-        <div class="poster-tree pt-tree">${treeHtml}</div>
-      </div>
-      <div class="pt-hint">
-        <strong>Print instructions:</strong> Press Ctrl+P → Save as PDF →
-        take PDF to print shop and request <strong>3m wide × 2m tall</strong> large-format print.
-      </div>
-    `;
-    console.log('Body HTML length: '+body.length);
-    const css=`
-      @page{size:3000mm 2000mm;margin:0;}
-      html,body{margin:0;padding:0;background:#fff;}
-      .poster-wrap{
-        width:100%;
-        padding:40px 60px;
-        display:flex;flex-direction:column;align-items:center;
-        background:#fffdf9;
-      }
-      .poster-brand{
-        font-size:28px;font-weight:900;letter-spacing:8px;
-        color:#8B6B3D;opacity:.5;text-transform:uppercase;
-        margin-bottom:12px;
-      }
-      .poster-title{
-        font-size:32px;font-weight:700;color:#3a2e24;
-        margin-bottom:30px;letter-spacing:1px;text-align:center;
-      }
-      .poster-tree{flex-shrink:0;}
-      .pt-hint{
-        background:#f5f0e8;padding:12px 20px;font-size:13px;
-        color:#5a4a3a;text-align:center;border-top:1px solid #d4c5b0;
-        margin-top:40px;
-      }
-      @media print{
-        @page{size:3000mm 2000mm;margin:0;}
-        html,body{width:3000mm;height:2000mm;}
-        .poster-wrap{width:3000mm;height:2000mm;padding:60mm 80mm 40mm;}
-        .poster-brand{font-size:18mm;}
-        .poster-title{font-size:30mm;}
-        .poster-tree{zoom:4.5;transform-origin:top center;}
-        .pt-hint{display:none;}
-      }
-    `;
-    console.log('Opening window...');
-    const win=ptOpenWindow('Family Tree — Poster (3m × 2m)',body,css);
-    console.log('ptOpenWindow returned: '+(win?'success':'null'));
-    if(win){
-      console.log('Poster window ready');
+    .poster-brand{
+      font-size:18mm;font-weight:900;letter-spacing:8mm;
+      color:#8B6B3D;opacity:.5;text-transform:uppercase;
+      margin-bottom:12mm;
     }
-  }catch(e){
-    console.error('Poster error:',e,e.stack);
-    toast('Error: '+e.message,'err');
+    .poster-title{
+      font-size:30mm;font-weight:700;color:#3a2e24;
+      margin-bottom:30mm;letter-spacing:1mm;text-align:center;
+    }
+    .poster-tree{zoom:4.5;transform-origin:top center;flex-shrink:0;}
+    .pt-hint{
+      position:fixed;bottom:0;left:0;right:0;
+      background:#f5f0e8;padding:12px 20px;font-size:13px;
+      color:#5a4a3a;text-align:center;border-top:1px solid #d4c5b0;
+    }
+    @media print{.pt-hint{display:none;}}
+  `;
+  const win=ptOpenWindow('Family Tree — Poster (3m × 2m)',body,css);
+  if(win){
+    win.document.write('<script>window.onload=function(){document.querySelector(".pt-hint").style.display="block";}<\/script>');
   }
 }
 
