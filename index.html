@@ -33,8 +33,11 @@
         <button class="icon-btn" id="closeEditor" title="Close (Esc)">✕</button>
       </div>
       <div class="photo">
-        <img id="ePhoto" alt="" hidden>
+        <div id="ePhotoDrag" class="photo-drag" hidden>
+          <img id="ePhoto" alt="">
+        </div>
         <div id="ePhotoFallback" class="avatar lg"></div>
+        <p class="photo-drag-hint" hidden>Drag to reposition</p>
         <label class="btn primary file" style="width:100%">Upload photo<input type="file" id="ePhotoInput" accept="image/*" hidden></label>
         <button class="btn danger" id="ePhotoRemove" style="width:100%" hidden>Remove photo</button>
       </div>
@@ -43,8 +46,11 @@
       <label class="lbl">Spouse / partner</label>
       <input id="eSpouse" placeholder="(optional)">
       <div class="photo" id="eSpousePhotoWrap" hidden>
-        <img id="eSpousePhoto" alt="" hidden>
+        <div id="eSpousePhotoDrag" class="photo-drag" hidden>
+          <img id="eSpousePhoto" alt="">
+        </div>
         <div id="eSpousePhotoFallback" class="avatar lg"></div>
+        <p class="photo-drag-hint" hidden>Drag to reposition</p>
         <label class="btn primary file btn-full">Upload spouse photo<input type="file" id="eSpousePhotoInput" accept="image/*" hidden></label>
         <button type="button" class="btn danger btn-full" id="eSpousePhotoRemove" hidden>Remove spouse photo</button>
       </div>

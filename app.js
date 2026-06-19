@@ -279,8 +279,13 @@ function renderTree(){
     node.style.cssText=`left:${x-NW/2}px;top:${y}px;width:${NW}px`;
 
     let av;
-    if(p.photo){av=document.createElement('img');av.src=p.photo;av.alt=p.name;}
-    else{av=document.createElement('div');av.textContent=initials(p.name);}
+    if(p.photo){
+      av=document.createElement('img');av.src=p.photo;av.alt=p.name;
+      const pos=p.photoPos||{x:50,y:50};
+      av.style.objectPosition=`${pos.x}% ${pos.y}%`;
+    }else{
+      av=document.createElement('div');av.textContent=initials(p.name);
+    }
     av.className='tn-av'+(p.deceased?' tn-av-dec':'');
     node.appendChild(av);
 
@@ -318,6 +323,8 @@ function renderTree(){
       if(sp.photo){
         spAv=document.createElement('img');
         spAv.src=sp.photo;spAv.alt=sp.name;
+        const spPos=sp.pos||{x:50,y:50};
+        spAv.style.objectPosition=`${spPos.x}% ${spPos.y}%`;
       }else{
         spAv=document.createElement('div');
         spAv.textContent=initials(sp.name);
@@ -356,16 +363,26 @@ function openEditor(){
     opts.push('<option value="'+q.id+'">'+'·'.repeat(depthOf(q.id))+' '+esc(q.name)+(q.spouse?' & '+esc(q.spouse.name):'')+'</option>');
   });
   sel.innerHTML=opts.join('');sel.value=p.parentId||'';
-  const img=el('ePhoto'),fb=el('ePhotoFallback'),rm=el('ePhotoRemove');
-  if(p.photo){img.src=p.photo;img.hidden=false;fb.hidden=true;rm.hidden=false;}
-  else{img.hidden=true;fb.hidden=false;fb.textContent=initials(p.name);rm.hidden=true;}
+  const img=el('ePhoto'),drag=el('ePhotoDrag'),fb=el('ePhotoFallback'),rm=el('ePhotoRemove'),hint=el('ePhotoDrag').nextElementSibling;
+  if(p.photo){
+    const pos=p.photoPos||{x:50,y:50};
+    img.src=p.photo;img.style.objectPosition=`${pos.x}% ${pos.y}%`;
+    drag.hidden=false;fb.hidden=true;rm.hidden=false;hint.hidden=false;
+  }else{
+    drag.hidden=true;fb.hidden=false;fb.textContent=initials(p.name);rm.hidden=true;hint.hidden=true;
+  }
   // Spouse photo section — only show when a spouse name exists
   const sp=p.spouse;
   el('eSpousePhotoWrap').hidden=!sp?.name;
   if(sp?.name){
-    const sImg=el('eSpousePhoto'),sFb=el('eSpousePhotoFallback'),sRm=el('eSpousePhotoRemove');
-    if(sp.photo){sImg.src=sp.photo;sImg.hidden=false;sFb.hidden=true;sRm.hidden=false;}
-    else{sImg.hidden=true;sFb.hidden=false;sFb.textContent=initials(sp.name);sRm.hidden=true;}
+    const sImg=el('eSpousePhoto'),sDrag=el('eSpousePhotoDrag'),sFb=el('eSpousePhotoFallback'),sRm=el('eSpousePhotoRemove'),sHint=el('eSpousePhotoDrag').nextElementSibling;
+    if(sp.photo){
+      const sPos=sp.pos||{x:50,y:50};
+      sImg.src=sp.photo;sImg.style.objectPosition=`${sPos.x}% ${sPos.y}%`;
+      sDrag.hidden=false;sFb.hidden=true;sRm.hidden=false;sHint.hidden=false;
+    }else{
+      sDrag.hidden=true;sFb.hidden=false;sFb.textContent=initials(sp.name);sRm.hidden=true;sHint.hidden=true;
+    }
   }
 }
 
@@ -377,10 +394,12 @@ async function saveMember(){
   if(spName){
     const spPhoto=p.spouse?.photo||null;
     const spPhotoHD=p.spouse?.photoHD||null;
+    const spPos=p.spouse?.pos||null;
     p.spouse={name:spName};
     if(spDec)p.spouse.deceased=true;
     if(spPhoto)p.spouse.photo=spPhoto;
     if(spPhotoHD)p.spouse.photoHD=spPhotoHD;
+    if(spPos)p.spouse.pos=spPos;
   }else{delete p.spouse;}
   p.deceased=el('eDeceased').checked;
   p.parentId=el('eParent').value||null;
@@ -463,7 +482,7 @@ async function onPhoto(e){
   showSaving();
   try{
     const[thumb,hd]=await bothSizes(f);
-    p.photo=thumb;p.photoHD=hd;
+    p.photo=thumb;p.photoHD=hd;p.photoPos={x:50,y:50};
     await saveToDB(p);
     showSaved();openEditor();renderTree();
   }catch(err){
@@ -476,7 +495,7 @@ async function removePhoto(){
   const p=byId(selectedId);if(!p)return;
   showSaving();
   localStorage.removeItem('photo_'+p.id);
-  delete p.photo;delete p.photoHD;
+  delete p.photo;delete p.photoHD;delete p.photoPos;
   try{await saveToDB(p);showSaved();}
   catch(e){showSaveError();}
   openEditor();renderTree();
@@ -488,7 +507,7 @@ async function onSpousePhoto(e){
   showSaving();
   try{
     const[thumb,hd]=await bothSizes(f);
-    p.spouse.photo=thumb;p.spouse.photoHD=hd;
+    p.spouse.photo=thumb;p.spouse.photoHD=hd;p.spouse.pos={x:50,y:50};
     await saveToDB(p);
     showSaved();openEditor();renderTree();
   }catch(err){
@@ -500,7 +519,7 @@ async function onSpousePhoto(e){
 async function removeSpousePhoto(){
   const p=byId(selectedId);if(!p||!p.spouse)return;
   showSaving();
-  delete p.spouse.photo;delete p.spouse.photoHD;
+  delete p.spouse.photo;delete p.spouse.photoHD;delete p.spouse.pos;
   try{await saveToDB(p);showSaved();}
   catch(e){showSaveError();}
   openEditor();renderTree();
@@ -627,20 +646,22 @@ function ptCollect(rootId,maxDepth){
   return arr;
 }
 
-function ptAv(name,photo,photoHD){
+function ptAv(name,photo,photoHD,pos){
   const src=photoHD||photo;
-  if(src)return`<img class="pt-av" src="${src}" alt="${esc(name)}">`;
+  const style=pos?` style="object-position:${pos.x}% ${pos.y}%"`:'';
+  if(src)return`<img class="pt-av" src="${src}" alt="${esc(name)}"${style}>`;
   return`<div class="pt-av pt-ini">${esc(initials(name))}</div>`;
 }
 
-function ptPersonHtml(p){
-  return`<div class="pt-person${p.deceased?' dec':''}">${ptAv(p.name,p.photo,p.photoHD)}<div class="pt-nm">${esc(p.name)}${p.deceased?' †':''}</div></div>`;
+function ptPersonHtml(p,isSpouse){
+  const pos=isSpouse?p.pos:p.photoPos;
+  return`<div class="pt-person${p.deceased?' dec':''}">${ptAv(p.name,p.photo,p.photoHD,pos)}<div class="pt-nm">${esc(p.name)}${p.deceased?' †':''}</div></div>`;
 }
 
 function ptNodeHtml(p,people){
   const kids=people.filter(x=>x.parentId===p.id);
-  let h=`<div class="pt-unit"><div class="pt-couple">${ptPersonHtml(p)}`;
-  if(p.spouse)h+=`<div class="pt-amp">&amp;</div>${ptPersonHtml(p.spouse)}`;
+  let h=`<div class="pt-unit"><div class="pt-couple">${ptPersonHtml(p,false)}`;
+  if(p.spouse)h+=`<div class="pt-amp">&amp;</div>${ptPersonHtml(p.spouse,true)}`;
   h+=`</div>`;
   if(kids.length){
     h+=`<div class="pt-down"></div><div class="pt-row">`;
@@ -762,6 +783,34 @@ function collapseAll(){
   renderTree();
 }
 
+// ── Photo drag to reposition ──────────────────────────────────────────────────
+
+function initPhotoDrag(wrapperId, imgId, getPos, setPos) {
+  const wrap=el(wrapperId), img=el(imgId);
+  let dragging=false, startX, startY, startPx, startPy;
+  wrap.addEventListener('pointerdown', e=>{
+    if(!img.src)return;
+    dragging=true;
+    startX=e.clientX; startY=e.clientY;
+    const pos=getPos(); startPx=pos.x; startPy=pos.y;
+    wrap.setPointerCapture(e.pointerId);
+    wrap.style.cursor='grabbing';
+    e.preventDefault();
+  });
+  wrap.addEventListener('pointermove', e=>{
+    if(!dragging)return;
+    const rect=wrap.getBoundingClientRect();
+    const scale=100/rect.width;
+    const nx=Math.max(0, Math.min(100, startPx-(e.clientX-startX)*scale));
+    const ny=Math.max(0, Math.min(100, startPy-(e.clientY-startY)*scale));
+    img.style.objectPosition=`${nx}% ${ny}%`;
+    setPos(nx, ny);
+  });
+  const stop=()=>{dragging=false; wrap.style.cursor='grab';};
+  wrap.addEventListener('pointerup', stop);
+  wrap.addEventListener('pointercancel', stop);
+}
+
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 
 document.addEventListener('keydown',e=>{
@@ -811,3 +860,13 @@ el('searchClear').addEventListener('click',()=>{
   el('searchClear').hidden=true;
   renderTree();el('search').focus();
 });
+
+// Photo drag initialization
+initPhotoDrag('ePhotoDrag','ePhoto',
+  ()=>byId(selectedId)?.photoPos||{x:50,y:50},
+  (x,y)=>{const p=byId(selectedId);if(p){p.photoPos={x,y};debouncedSave();}}
+);
+initPhotoDrag('eSpousePhotoDrag','eSpousePhoto',
+  ()=>byId(selectedId)?.spouse?.pos||{x:50,y:50},
+  (x,y)=>{const p=byId(selectedId);if(p?.spouse){p.spouse.pos={x,y};debouncedSave();}}
+);
