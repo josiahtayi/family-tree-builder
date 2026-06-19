@@ -675,9 +675,8 @@ function ptNodeHtml(p,people){
 function ptTitle(p){return p.name+(p.spouse?` & ${p.spouse.name}`:'')+' Family';}
 
 
-const PT_CSS=`
-*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#fff;color:#2b2b2b;}
+// Tree-node styles shared by the popup print and the in-page poster overlay.
+const PT_NODE_CSS=`
 .pt-page{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;padding:14px 0;}
 .pt-brand{font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#8B6B3D;opacity:.45;margin-bottom:6px;}
 .pt-title{font-size:15px;font-weight:700;margin-bottom:20px;color:#3a2e24;letter-spacing:.2px;}
@@ -699,6 +698,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .pt-col:first-child:last-child::before{display:none;}
 .pt-col::after{content:'';position:absolute;top:0;left:50%;width:0;height:16px;border-left:2px solid #b0a090;transform:translateX(-1px);}
 `;
+
+const PT_CSS=`
+*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#fff;color:#2b2b2b;}
+`+PT_NODE_CSS;
 
 function ptOpenWindow(title,body,extraCss){
   const win=window.open('','_blank');
@@ -726,53 +730,74 @@ function printFamilyTrees(){
 
 // ── Print full family poster ──────────────────────────────────────────────────
 
+// In-page poster overlay styles. Injected once into the main document.
+// pt- node classes are unique to print/poster, so they never clash with the
+// app's on-screen tree (which uses tn- classes).
+const POSTER_CSS=PT_NODE_CSS+`
+#posterOverlay{position:fixed;inset:0;z-index:10000;background:#403a33;display:flex;flex-direction:column;}
+.poster-toolbar{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e0d9cd;}
+.poster-toolbar button{padding:7px 14px;border:1px solid #d9d2c5;background:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#2b2b2b;}
+.poster-toolbar button:hover{background:#f3eee5;}
+.poster-toolbar .poster-print{background:#6b4f3a;border-color:#6b4f3a;color:#fff;}
+.poster-toolbar .poster-print:hover{background:#553f2e;}
+.poster-toolbar-hint{font-size:12px;color:#cbb89a;margin-left:auto;}
+.poster-scroll{flex:1;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:24px;}
+.poster-wrap{background:#fffdf9;padding:40px 60px;display:flex;flex-direction:column;align-items:center;flex-shrink:0;box-shadow:0 6px 30px rgba(0,0,0,.4);}
+.poster-brand{font-size:22px;font-weight:900;letter-spacing:6px;color:#8B6B3D;opacity:.5;text-transform:uppercase;margin-bottom:10px;}
+.poster-title{font-size:26px;font-weight:700;color:#3a2e24;margin-bottom:24px;letter-spacing:.5px;text-align:center;}
+.poster-tree{flex-shrink:0;}
+@media print{
+  body>*:not(#posterOverlay){display:none !important;}
+  @page{size:3000mm 2000mm;margin:0;}
+  #posterOverlay{position:static;background:#fff;display:block;}
+  #posterOverlay *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .poster-toolbar{display:none !important;}
+  .poster-scroll{overflow:visible;padding:0;display:block;}
+  .poster-wrap{width:3000mm;height:2000mm;padding:60mm 80mm 40mm;box-shadow:none;overflow:hidden;}
+  .poster-brand{font-size:18mm;letter-spacing:8mm;margin-bottom:12mm;}
+  .poster-title{font-size:30mm;margin-bottom:30mm;letter-spacing:1mm;}
+  .poster-tree{zoom:4.5;transform-origin:top center;}
+}
+`;
+
 function printFullTree(){
   const root=roots()[0];
   if(!root){toast('No family data to print','err');return;}
   const people=ptCollect(root.id,99);
   const heading=esc(root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree');
-  const body=`
-    <div class="poster-wrap">
-      <div class="poster-brand">TAYI FAMILY TREE</div>
-      <h1 class="poster-title">${heading}</h1>
-      <div class="poster-tree pt-tree">${ptNodeHtml(root,people)}</div>
-    </div>
-    <div class="pt-hint">
-      <strong>Print instructions:</strong> Press Ctrl+P → Save as PDF →
-      take PDF to print shop and request <strong>3m wide × 2m tall</strong> large-format print.
-    </div>
-  `;
-  const css=`
-    @page{size:3000mm 2000mm;margin:0;}
-    html,body{width:3000mm;height:2000mm;margin:0;padding:0;overflow:hidden;}
-    .poster-wrap{
-      width:3000mm;height:2000mm;
-      padding:60mm 80mm 40mm;
-      display:flex;flex-direction:column;align-items:center;
-      background:#fffdf9;
-      overflow:hidden;
-    }
-    .poster-brand{
-      font-size:18mm;font-weight:900;letter-spacing:8mm;
-      color:#8B6B3D;opacity:.5;text-transform:uppercase;
-      margin-bottom:12mm;
-    }
-    .poster-title{
-      font-size:30mm;font-weight:700;color:#3a2e24;
-      margin-bottom:30mm;letter-spacing:1mm;text-align:center;
-    }
-    .poster-tree{zoom:4.5;transform-origin:top center;flex-shrink:0;}
-    .pt-hint{
-      position:fixed;bottom:0;left:0;right:0;
-      background:#f5f0e8;padding:12px 20px;font-size:13px;
-      color:#5a4a3a;text-align:center;border-top:1px solid #d4c5b0;
-    }
-    @media print{.pt-hint{display:none;}}
-  `;
-  const win=ptOpenWindow('Family Tree — Poster (3m × 2m)',body,css);
-  if(win){
-    win.document.write('<script>window.onload=function(){document.querySelector(".pt-hint").style.display="block";}<\/script>');
+
+  // Inject poster styles into the main document once.
+  if(!document.getElementById('posterStyles')){
+    const st=document.createElement('style');
+    st.id='posterStyles';
+    st.textContent=POSTER_CSS;
+    document.head.appendChild(st);
   }
+
+  // Remove any previous overlay, then build a fresh one in the current page.
+  document.getElementById('posterOverlay')?.remove();
+  const overlay=document.createElement('div');
+  overlay.id='posterOverlay';
+  overlay.innerHTML=`
+    <div class="poster-toolbar">
+      <button type="button" class="poster-print" id="posterPrint">🖨 Print / Save PDF</button>
+      <button type="button" id="posterClose">✕ Close</button>
+      <span class="poster-toolbar-hint">Print → Save as PDF → print shop at 3m × 2m</span>
+    </div>
+    <div class="poster-scroll">
+      <div class="poster-wrap">
+        <div class="poster-brand">TAYI FAMILY TREE</div>
+        <h1 class="poster-title">${heading}</h1>
+        <div class="poster-tree pt-tree">${ptNodeHtml(root,people)}</div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  el('posterClose').addEventListener('click',()=>overlay.remove());
+  el('posterPrint').addEventListener('click',()=>window.print());
+  document.addEventListener('keydown',function escClose(ev){
+    if(ev.key==='Escape'){overlay.remove();document.removeEventListener('keydown',escClose);}
+  });
 }
 
 // ── Expand / Collapse ─────────────────────────────────────────────────────────
