@@ -682,16 +682,16 @@ const PT_NODE_CSS=`
 .pt-title{font-size:15px;font-weight:700;margin-bottom:20px;color:#3a2e24;letter-spacing:.2px;}
 .pt-tree{display:flex;justify-content:center;position:relative;z-index:1;}
 .pt-unit{display:flex;flex-direction:column;align-items:center;}
-.pt-couple{display:flex;align-items:center;gap:5px;background:#f5f0e8;border:1.5px solid #d4c5b0;border-radius:7px;padding:7px 9px;}
+.pt-couple{display:flex;align-items:center;gap:3px;background:#f5f0e8;border:1.5px solid #d4c5b0;border-radius:7px;padding:6px 6px;}
 .pt-person{display:flex;flex-direction:column;align-items:center;gap:3px;}
 .pt-person.dec{opacity:.6;}
-.pt-av{width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid #c8b8a2;display:block;}
-.pt-ini{background:#6b4f3a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;}
-.pt-nm{font-size:9.5px;font-weight:600;text-align:center;max-width:70px;line-height:1.3;}
-.pt-amp{font-size:9px;color:#9a9388;align-self:center;padding:0 1px;}
+.pt-av{width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px solid #c8b8a2;display:block;}
+.pt-ini{background:#6b4f3a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:30px;}
+.pt-nm{font-size:11px;font-weight:600;text-align:center;max-width:96px;line-height:1.25;}
+.pt-amp{font-size:11px;color:#9a9388;align-self:center;padding:0 1px;}
 .pt-down{width:0;height:16px;border-left:2px solid #b0a090;margin:0 auto;}
 .pt-row{display:flex;align-items:flex-start;justify-content:center;}
-.pt-col{display:flex;flex-direction:column;align-items:center;position:relative;padding:16px 5px 0;}
+.pt-col{display:flex;flex-direction:column;align-items:center;position:relative;padding:16px 3px 0;}
 .pt-col::before{content:'';position:absolute;top:0;left:0;right:0;border-top:2px solid #b0a090;}
 .pt-col:first-child::before{left:50%;}
 .pt-col:last-child::before{right:50%;}
@@ -745,6 +745,7 @@ const POSTER_CSS=PT_NODE_CSS+`
 .poster-zoom{display:flex;align-items:center;gap:4px;margin-left:6px;padding-left:12px;border-left:1px solid #e0d9cd;}
 .poster-zoom button{min-width:32px;font-size:15px;line-height:1;padding:6px 8px;}
 .poster-zoom-pct{font-size:12px;font-weight:600;color:#7a7268;min-width:42px;text-align:center;}
+.poster-photo-size{font-size:12px;font-weight:600;color:#6b4f3a;background:#f3eee5;padding:5px 10px;border-radius:6px;white-space:nowrap;}
 .poster-toolbar-hint{font-size:12px;color:#cbb89a;margin-left:auto;}
 .poster-scroll{flex:1;overflow:auto;padding:24px;}
 .poster-wrap{background:#fffdf9;padding:40px 60px;display:flex;flex-direction:column;align-items:center;width:max-content;margin:0 auto;box-shadow:0 6px 30px rgba(0,0,0,.4);}
@@ -762,7 +763,10 @@ const POSTER_SIZES={
 
 // Build the @media print CSS for a given page size. Paddings and font sizes
 // scale proportionally to the page so every preset is laid out consistently.
-function posterPrintCSS(wMM,hMM){
+// treeZoom is baked directly into the CSS (not applied via a JS print event, as
+// 'beforeprint' is unreliable when printing to PDF) so the tree always fills
+// the page at full physical size.
+function posterPrintCSS(wMM,hMM,treeZoom){
   const padSide=Math.round(wMM*0.0267),padTop=Math.round(hMM*0.03),padBot=Math.round(hMM*0.02);
   const brandF=Math.round(hMM*0.009),brandLS=Math.max(1,Math.round(hMM*0.004)),brandMB=Math.round(hMM*0.006);
   const titleF=Math.round(hMM*0.015),titleMB=Math.round(hMM*0.015);
@@ -777,7 +781,7 @@ function posterPrintCSS(wMM,hMM){
   .poster-wrap{width:${wMM}mm;height:${hMM}mm;padding:${padTop}mm ${padSide}mm ${padBot}mm;margin:0;box-shadow:none;overflow:hidden;zoom:1 !important;justify-content:center;}
   .poster-brand{font-size:${brandF}mm;letter-spacing:${brandLS}mm;margin-bottom:${brandMB}mm;}
   .poster-title{font-size:${titleF}mm;margin-bottom:${titleMB}mm;letter-spacing:1mm;}
-  .poster-tree{transform-origin:top center;}
+  .poster-tree{zoom:${treeZoom};transform-origin:top center;}
 }`;
 }
 
@@ -809,13 +813,19 @@ function printFullTree(){
   overlay.innerHTML=`
     <div class="poster-toolbar">
       <button type="button" class="poster-print" id="posterPrint">🖨 Print / Save PDF</button>
+      <button type="button" id="posterPng">🖼 Download PNG</button>
       <button type="button" id="posterClose">✕ Close</button>
       <label class="poster-size-wrap">Size
         <select id="posterSize">
-          <option value="auto">Auto — fit tree</option>
-          ${Object.entries(POSTER_SIZES).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}
+          <option value="auto3000">Auto — 3m wide</option>
+          <option value="auto4000">Auto — 4m wide</option>
+          <option value="auto5000">Auto — 5m wide</option>
+          <option value="auto6000">Auto — 6m wide</option>
+          <option value="auto8000">Auto — 8m wide</option>
+          ${Object.entries(POSTER_SIZES).map(([k,v])=>`<option value="${k}">${v.label} (fixed)</option>`).join('')}
         </select>
       </label>
+      <span class="poster-photo-size" id="posterPhotoSize"></span>
       <div class="poster-zoom">
         <button type="button" id="posterZoomOut" title="Zoom out">−</button>
         <span class="poster-zoom-pct" id="posterZoomPct">100%</span>
@@ -849,56 +859,113 @@ function printFullTree(){
     applyZoom(natural>0?avail/natural:1);
   };
 
-  // Currently selected print size; drives both the print CSS and the auto-fit.
-  let pageW=3000,pageH=2000;
+  // Measure the tree's natural pixel size once (used to compute print scale).
+  const MM=3.779528; // CSS px per mm at 96dpi
+  const measureTree=()=>{
+    const pz=tree.style.zoom,wz=wrap.style.zoom;
+    tree.style.zoom=1;wrap.style.zoom=1;
+    const w=tree.scrollWidth,h=tree.scrollHeight;
+    tree.style.zoom=pz;wrap.style.zoom=wz;
+    return{w,h};
+  };
+  const treeNat=measureTree();
+
+  // Currently selected print size. applySize computes the page dimensions and
+  // bakes the tree zoom directly into the print CSS so it always applies.
+  let pageW=3000,pageH=2000,curTreeZoom=1;
+  // Natural avatar diameter in px (from .pt-av) — used to report print photo size.
+  const avPx=parseFloat(getComputedStyle(tree.querySelector('.pt-av')||tree).width)||96;
   const applySize=key=>{
-    if(key==='auto'){
-      // Derive page height from the tree's natural aspect ratio so the poster
-      // matches the on-screen shape (wide & short) with no wasted vertical space.
-      // Width is fixed at 3000mm; the tree fills the content width, and the page
-      // height is just enough for padding + title + the scaled tree.
-      const prevZoom=tree.style.zoom;
-      tree.style.zoom=1;
-      const tw=tree.scrollWidth,th=tree.scrollHeight;
-      tree.style.zoom=prevZoom;
-      pageW=3000;
-      // posterPrintCSS uses: side pad 2.67% each, top 3% + bottom 2% = 5% vertical
-      // pad, and the title block ~4.8% of height. So tree fills (1-0.098) of height.
-      const treeHmm=th>0&&tw>0 ? (th*pageW*(1-0.0534))/tw : pageW*0.6;
-      pageH=Math.max(400,Math.round(treeHmm/0.902));
+    const tw=treeNat.w||1,th=treeNat.h||1;
+    if(key.startsWith('auto')){
+      // Page width chosen by the user; height derived from the tree's aspect ratio
+      // so the poster matches the on-screen shape with no wasted vertical space.
+      pageW=parseInt(key.slice(4),10)||3000;
+      const treeHmm=(th*pageW*(1-0.0534))/tw; // tree height when it fills the width
+      pageH=Math.max(400,Math.round(treeHmm/0.902)); // +pad(5%)+title(~4.8%)
     }else{
       const s=POSTER_SIZES[key]||POSTER_SIZES['3000x2000'];
       pageW=s.w;pageH=s.h;
     }
-    printStyle.textContent=posterPrintCSS(pageW,pageH);
+    // Compute the zoom that makes the tree fill the page (width- or height-bound).
+    const availW=pageW*MM*(1-0.0534);
+    const availH=(pageH-(pageH*0.03+pageH*0.02)-pageH*0.048)*MM;
+    const treeZoom=Math.max(0.1,Math.min(availW/(tw),availH/(th)));
+    curTreeZoom=treeZoom;
+    printStyle.textContent=posterPrintCSS(pageW,pageH,+treeZoom.toFixed(3));
+    // Report the resulting per-photo print size so the user can dial in the width.
+    const photoMM=Math.round(avPx*treeZoom/MM);
+    const sizeEl=el('posterPhotoSize');
+    if(sizeEl)sizeEl.textContent=`Page ${(pageW/1000).toFixed(pageW%1000?2:0)}m × ${(pageH/1000).toFixed(2)}m · photos ≈ ${(photoMM/10).toFixed(1)}cm`;
   };
 
-  // Auto-fit the tree to the selected page right before printing, then restore.
-  const MM=3.779528; // CSS px per mm at 96dpi
-  const beforePrint=()=>{
-    wrap.style.zoom=1;            // print CSS already forces this, keep consistent
-    tree.style.zoom=1;
-    const PAGE_W=pageW*MM,PAGE_H=pageH*MM;
-    const PAD_X=Math.round(pageW*0.0267)*MM*2;
-    const PAD_V=(Math.round(pageH*0.03)+Math.round(pageH*0.02))*MM;
-    const TITLE_H=pageH*0.048*MM; // brand + title + their margins
-    const tw=tree.scrollWidth,th=tree.scrollHeight;
-    if(tw>0&&th>0){
-      const z=Math.min((PAGE_W-PAD_X)/tw,(PAGE_H-PAD_V-TITLE_H)/th);
-      tree.style.zoom=z;
+  const closeOverlay=()=>overlay.remove();
+
+  // Export the poster as a single high-resolution PNG. This bypasses all
+  // printer-driver page-size limits — the print shop prints the image at any
+  // physical size. Renders the tree via an SVG <foreignObject> to a canvas.
+  const headingPlain=root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree';
+  const downloadPNG=async()=>{
+    const btn=el('posterPng');
+    btn.disabled=true;btn.textContent='Rendering…';
+    try{
+      const targetW=Math.min(Math.round(pageW*MM),14000); // cap to canvas limits
+      const rs=targetW/(pageW*MM);                          // render scale vs print px
+      const W=targetW,H=Math.round(W*pageH/pageW);
+      const padTop=pageH*0.03*MM*rs,padSide=pageW*0.0267*MM*rs,padBot=pageH*0.02*MM*rs;
+      const brandF=pageH*0.009*MM*rs,brandMB=pageH*0.006*MM*rs,brandLS=pageH*0.004*MM*rs;
+      const titleF=pageH*0.015*MM*rs,titleMB=pageH*0.015*MM*rs;
+
+      // Build the poster as a real DOM tree, then serialize to valid XML so void
+      // elements like <img> are self-closed (required inside foreignObject).
+      const rootDiv=document.createElement('div');
+      rootDiv.setAttribute('xmlns','http://www.w3.org/1999/xhtml');
+      rootDiv.style.cssText=`width:${W}px;height:${H}px;box-sizing:border-box;background:#fffdf9;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:${padTop}px ${padSide}px ${padBot}px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;`;
+      const styleEl=document.createElement('style');styleEl.textContent=PT_NODE_CSS;rootDiv.appendChild(styleEl);
+      const brandEl=document.createElement('div');
+      brandEl.style.cssText=`font-size:${brandF}px;font-weight:900;letter-spacing:${brandLS}px;color:#8B6B3D;opacity:.5;text-transform:uppercase;margin-bottom:${brandMB}px;`;
+      brandEl.textContent='TAYI FAMILY TREE';rootDiv.appendChild(brandEl);
+      const titleEl=document.createElement('div');
+      titleEl.style.cssText=`font-size:${titleF}px;font-weight:700;color:#3a2e24;margin-bottom:${titleMB}px;text-align:center;`;
+      titleEl.textContent=headingPlain;rootDiv.appendChild(titleEl);
+      const treeClone=tree.cloneNode(true);
+      treeClone.style.zoom=curTreeZoom*rs;treeClone.style.transformOrigin='top center';
+      rootDiv.appendChild(treeClone);
+
+      const xml=new XMLSerializer().serializeToString(rootDiv);
+      const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><foreignObject x="0" y="0" width="${W}" height="${H}">${xml}</foreignObject></svg>`;
+      const svgUrl=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
+      await new Promise((resolve,reject)=>{
+        const img=new Image();
+        img.onload=()=>{
+          try{
+            const canvas=document.createElement('canvas');
+            canvas.width=W;canvas.height=H;
+            const ctx=canvas.getContext('2d');
+            ctx.fillStyle='#fffdf9';ctx.fillRect(0,0,W,H);
+            ctx.drawImage(img,0,0);
+            URL.revokeObjectURL(svgUrl);
+            canvas.toBlob(b=>{
+              if(!b){reject(new Error('canvas export failed'));return;}
+              const a=document.createElement('a');
+              a.href=URL.createObjectURL(b);
+              a.download=`family-poster-${(pageW/1000).toString().replace('.','_')}m.png`;
+              document.body.appendChild(a);a.click();a.remove();
+              setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+              resolve();
+            },'image/png');
+          }catch(err){reject(err);}
+        };
+        img.onerror=()=>{URL.revokeObjectURL(svgUrl);reject(new Error('image render failed'));};
+        img.src=svgUrl;
+      });
+      toast(`Saved PNG — ${W}×${H}px`);
+    }catch(e){
+      console.error('PNG export error:',e);
+      toast('PNG export failed: '+e.message,'err');
+    }finally{
+      btn.disabled=false;btn.textContent='🖼 Download PNG';
     }
-  };
-  const afterPrint=()=>{
-    tree.style.zoom='';
-    fit(); // restore the on-screen fit
-  };
-  window.addEventListener('beforeprint',beforePrint);
-  window.addEventListener('afterprint',afterPrint);
-
-  const closeOverlay=()=>{
-    window.removeEventListener('beforeprint',beforePrint);
-    window.removeEventListener('afterprint',afterPrint);
-    overlay.remove();
   };
 
   el('posterSize').addEventListener('change',e=>applySize(e.target.value));
@@ -907,12 +974,13 @@ function printFullTree(){
   el('posterZoomFit').addEventListener('click',fit);
   el('posterClose').addEventListener('click',closeOverlay);
   el('posterPrint').addEventListener('click',()=>window.print());
+  el('posterPng').addEventListener('click',downloadPNG);
   document.addEventListener('keydown',function escClose(ev){
     if(ev.key==='Escape'){closeOverlay();document.removeEventListener('keydown',escClose);}
   });
 
-  // Default: Auto size (page matches tree shape) + fit-to-width on screen.
-  applySize('auto');
+  // Default: Auto 3m wide (page matches tree shape) + fit-to-width on screen.
+  applySize('auto3000');
   fit();
 }
 
