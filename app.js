@@ -554,8 +554,6 @@ async function restorePhotos(e){
       if(!confirm(`Restore ${photoCount} people's photos from backup?\n\nThis will update photos in the database.`)){e.target.value='';return;}
       showSaving();
       let saved=0;
-      let batch=db.batch();
-      let batchSize=0;
       for(const p of data){
         if(!p.id)continue;
         const updates={};
@@ -564,17 +562,10 @@ async function restorePhotos(e){
         if(p.spouse?.photo)updates['spouse.photo']=p.spouse.photo;
         if(p.spouse?.photoHD)updates['spouse.photoHD']=p.spouse.photoHD;
         if(Object.keys(updates).length>0){
-          batch.update(personRef(p.id),updates);
-          batchSize++;
+          await personRef(p.id).update(updates);
           saved++;
-          if(batchSize===20){
-            await batch.commit();
-            batch=db.batch();
-            batchSize=0;
-          }
         }
       }
-      if(batchSize>0)await batch.commit();
       await loadFamily();
       showSaved();
       toast(`Restored photos for ${saved} people`);
