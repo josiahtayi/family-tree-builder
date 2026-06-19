@@ -54,83 +54,6 @@ auth.onAuthStateChanged(user=>{
 
 const el=id=>document.getElementById(id);
 
-const DEFAULT_FAMILY=[
-{"id":"1.0","name":"Selina","parentId":null,"spouse":{"name":"David","deceased":true}},
-{"id":"2.1","name":"George","parentId":"1.0","deceased":true,"spouse":{"name":"Elizabeth","deceased":true}},
-{"id":"2.2","name":"Josaya","parentId":"1.0","spouse":{"name":"Jane"}},
-{"id":"2.3","name":"Gloria","parentId":"1.0"},
-{"id":"2.4","name":"Gciniwe","parentId":"1.0","spouse":{"name":"Eliot","deceased":true}},
-{"id":"2.5","name":"Tengiwe","parentId":"1.0"},
-{"id":"2.6","name":"Sinikiwe","parentId":"1.0"},
-{"id":"2.7","name":"Toleni","parentId":"1.0","spouse":{"name":"Anna"}},
-{"id":"2.8","name":"Khumbulani","parentId":"1.0","spouse":{"name":"Washington"}},
-{"id":"2.1.1","name":"Patience","parentId":"2.1"},
-{"id":"2.1.2","name":"Bekezela","parentId":"2.1","spouse":{"name":"Mazvitashe"}},
-{"id":"2.1.3","name":"Blessing","parentId":"2.1"},
-{"id":"2.1.1.1","name":"Ngonidzashe","parentId":"2.1.1"},
-{"id":"2.1.1.2","name":"Leo","parentId":"2.1.1"},
-{"id":"2.1.1.3","name":"Lewis","parentId":"2.1.1"},
-{"id":"2.1.2.1","name":"Rutendo","parentId":"2.1.2"},
-{"id":"2.1.2.2","name":"Selma","parentId":"2.1.2"},
-{"id":"2.1.2.3","name":"Sheunesu George","parentId":"2.1.2"},
-{"id":"2.1.2.4","name":"Summer","parentId":"2.1.2"},
-{"id":"2.1.3.1","name":"Christie Elizabeth","parentId":"2.1.3"},
-{"id":"2.2.1","name":"Nyasha","parentId":"2.2","spouse":{"name":"Rajeewa"}},
-{"id":"2.2.2","name":"Selina","parentId":"2.2","spouse":{"name":"Anthony"}},
-{"id":"2.2.3","name":"Jessica","parentId":"2.2","spouse":{"name":"Sandro Carlos"}},
-{"id":"2.2.4","name":"Munyaradzi Josaya","parentId":"2.2"},
-{"id":"2.2.5","name":"John","parentId":"2.2"},
-{"id":"2.2.1.1","name":"Reon","parentId":"2.2.1"},
-{"id":"2.2.1.2","name":"Raegan","parentId":"2.2.1"},
-{"id":"2.2.1.3","name":"Rhema","parentId":"2.2.1"},
-{"id":"2.2.2.1","name":"Ezra","parentId":"2.2.2"},
-{"id":"2.2.3.1","name":"Juliana Shamiso","parentId":"2.2.3"},
-{"id":"2.3.1","name":"Sitshengisiwe","parentId":"2.3"},
-{"id":"2.3.2","name":"Tarisai","parentId":"2.3","spouse":{"name":"Judith Moreen"}},
-{"id":"2.3.3","name":"Tsitsi","parentId":"2.3","spouse":{"name":"Nyasha Josiah"}},
-{"id":"2.3.4","name":"Tariro","parentId":"2.3"},
-{"id":"2.3.5","name":"Blessing","parentId":"2.3","spouse":{"name":"Graham"}},
-{"id":"2.3.1.1","name":"Anotida Hanitra","parentId":"2.3.1"},
-{"id":"2.3.2.1","name":"Anopa Douglas","parentId":"2.3.2"},
-{"id":"2.3.2.2","name":"Jordan Takura","parentId":"2.3.2"},
-{"id":"2.3.3.1","name":"Mikayla Ariella","parentId":"2.3.3"},
-{"id":"2.3.4.1","name":"Atipaishe","parentId":"2.3.4"},
-{"id":"2.3.4.2","name":"Nilsa","parentId":"2.3.4"},
-{"id":"2.4.1","name":"Ronald","parentId":"2.4","spouse":{"name":"Caroline"}},
-{"id":"2.4.2","name":"Constance","parentId":"2.4"},
-{"id":"2.4.3","name":"Melody","parentId":"2.4"},
-{"id":"2.4.4","name":"Angeline","parentId":"2.4","deceased":true},
-{"id":"2.4.5","name":"Fortunate","parentId":"2.4"},
-{"id":"2.4.1.1","name":"Ronald","parentId":"2.4.1"},
-{"id":"2.4.1.2","name":"Queen","parentId":"2.4.1"},
-{"id":"2.4.2.1","name":"Bradley","parentId":"2.4.2"},
-{"id":"2.4.2.2","name":"Barney","parentId":"2.4.2"},
-{"id":"2.4.2.3","name":"Anisha","parentId":"2.4.2"},
-{"id":"2.4.3.1","name":"Tinashe Ben","parentId":"2.4.3"},
-{"id":"2.4.3.2","name":"Anashe","parentId":"2.4.3"},
-{"id":"2.4.5.1","name":"Jaden","parentId":"2.4.5"},
-{"id":"2.4.5.2","name":"Joey","parentId":"2.4.5"},
-{"id":"2.5.1","name":"Sarati Thelma","parentId":"2.5"},
-{"id":"2.5.2","name":"Manuel Achim","parentId":"2.5"},
-{"id":"2.5.1.1","name":"Ethan Mufaro","parentId":"2.5.1"},
-{"id":"2.5.1.2","name":"Ethal Ruvarashe","parentId":"2.5.1"},
-{"id":"2.6.1","name":"Maenzanise","parentId":"2.6","spouse":{"name":"Anna Panduleni Itula"}},
-{"id":"2.6.2","name":"Munashe","parentId":"2.6","deceased":true},
-{"id":"2.6.3","name":"Vongai","parentId":"2.6"},
-{"id":"2.6.4","name":"Joseph","parentId":"2.6","spouse":{"name":"Martha"}},
-{"id":"2.6.1.1","name":"Jerry","parentId":"2.6.1"},
-{"id":"2.6.1.2","name":"Robyn Sinikiwe","parentId":"2.6.1"},
-{"id":"2.6.1.3","name":"Ishmael","parentId":"2.6.1"},
-{"id":"2.6.1.4","name":"Munashe","parentId":"2.6.1"},
-{"id":"2.6.4.1","name":"Gabriel","parentId":"2.6.4"},
-{"id":"2.7.1","name":"Panashe","parentId":"2.7"},
-{"id":"2.7.2","name":"Anesu","parentId":"2.7"},
-{"id":"2.7.3","name":"Dean","parentId":"2.7"},
-{"id":"2.7.4","name":"Gamuchirai","parentId":"2.7"},
-{"id":"2.8.1","name":"Ruvimbo","parentId":"2.8"},
-{"id":"2.8.2","name":"Elsa","parentId":"2.8"},
-{"id":"2.8.3","name":"Ashton","parentId":"2.8"}
-];
 
 let family=[],selectedId=null,collapsed=new Set(),term='',migrationDone=false;
 
@@ -233,9 +156,9 @@ function closeEditor(){
 
 // ── Diagram layout constants ──────────────────────────────────────────────────
 
-const NW=130;  // slot width per person (px)
-const NH=134;  // node visual height, used for SVG connector anchor
-const RH=196;  // vertical distance between generation rows
+const NW=110;  // slot width per person (px)
+const NH=96;   // node visual height, used for SVG connector anchor
+const RH=158;  // vertical distance between generation rows
 const PAD=24;  // canvas edge padding
 const AV_R=23; // avatar radius (half of 46px avatar)
 
@@ -702,7 +625,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .pt-couple{display:flex;align-items:center;gap:5px;background:#f5f0e8;border:1.5px solid #d4c5b0;border-radius:7px;padding:7px 9px;}
 .pt-person{display:flex;flex-direction:column;align-items:center;gap:3px;}
 .pt-person.dec{opacity:.6;}
-.pt-av{width:44px;height:54px;border-radius:7px;object-fit:contain;background:#f0ebe0;border:1.5px solid #c8b8a2;display:block;}
+.pt-av{width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid #c8b8a2;display:block;}
 .pt-ini{background:#6b4f3a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;}
 .pt-nm{font-size:9.5px;font-weight:600;text-align:center;max-width:70px;line-height:1.3;}
 .pt-amp{font-size:9px;color:#9a9388;align-self:center;padding:0 1px;}
