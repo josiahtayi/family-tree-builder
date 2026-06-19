@@ -735,28 +735,32 @@ function printFamilyTrees(){
 // app's on-screen tree (which uses tn- classes).
 const POSTER_CSS=PT_NODE_CSS+`
 #posterOverlay{position:fixed;inset:0;z-index:10000;background:#403a33;display:flex;flex-direction:column;}
-.poster-toolbar{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e0d9cd;}
-.poster-toolbar button{padding:7px 14px;border:1px solid #d9d2c5;background:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#2b2b2b;}
+.poster-toolbar{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:10px 16px;background:#fff;border-bottom:1px solid #e0d9cd;}
+.poster-toolbar button{padding:7px 12px;border:1px solid #d9d2c5;background:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#2b2b2b;}
 .poster-toolbar button:hover{background:#f3eee5;}
 .poster-toolbar .poster-print{background:#6b4f3a;border-color:#6b4f3a;color:#fff;}
 .poster-toolbar .poster-print:hover{background:#553f2e;}
+.poster-zoom{display:flex;align-items:center;gap:4px;margin-left:6px;padding-left:12px;border-left:1px solid #e0d9cd;}
+.poster-zoom button{min-width:32px;font-size:15px;line-height:1;padding:6px 8px;}
+.poster-zoom-pct{font-size:12px;font-weight:600;color:#7a7268;min-width:42px;text-align:center;}
 .poster-toolbar-hint{font-size:12px;color:#cbb89a;margin-left:auto;}
-.poster-scroll{flex:1;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:24px;}
-.poster-wrap{background:#fffdf9;padding:40px 60px;display:flex;flex-direction:column;align-items:center;flex-shrink:0;box-shadow:0 6px 30px rgba(0,0,0,.4);}
+.poster-scroll{flex:1;overflow:auto;padding:24px;}
+.poster-wrap{background:#fffdf9;padding:40px 60px;display:flex;flex-direction:column;align-items:center;width:max-content;margin:0 auto;box-shadow:0 6px 30px rgba(0,0,0,.4);}
 .poster-brand{font-size:22px;font-weight:900;letter-spacing:6px;color:#8B6B3D;opacity:.5;text-transform:uppercase;margin-bottom:10px;}
 .poster-title{font-size:26px;font-weight:700;color:#3a2e24;margin-bottom:24px;letter-spacing:.5px;text-align:center;}
 .poster-tree{flex-shrink:0;}
 @media print{
-  body>*:not(#posterOverlay){display:none !important;}
   @page{size:3000mm 2000mm;margin:0;}
-  #posterOverlay{position:static;background:#fff;display:block;}
+  html,body{width:3000mm !important;height:2000mm !important;margin:0 !important;padding:0 !important;overflow:hidden !important;}
+  body>*:not(#posterOverlay){display:none !important;}
+  #posterOverlay{position:static;background:#fff;display:block;width:3000mm;height:2000mm;}
   #posterOverlay *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .poster-toolbar{display:none !important;}
-  .poster-scroll{overflow:visible;padding:0;display:block;}
-  .poster-wrap{width:3000mm;height:2000mm;padding:60mm 80mm 40mm;box-shadow:none;overflow:hidden;}
+  .poster-scroll{overflow:visible;padding:0;height:auto;display:block;}
+  .poster-wrap{width:3000mm;height:2000mm;padding:60mm 80mm 40mm;margin:0;box-shadow:none;overflow:hidden;zoom:1 !important;}
   .poster-brand{font-size:18mm;letter-spacing:8mm;margin-bottom:12mm;}
   .poster-title{font-size:30mm;margin-bottom:30mm;letter-spacing:1mm;}
-  .poster-tree{zoom:4.5;transform-origin:top center;}
+  .poster-tree{transform-origin:top center;}
 }
 `;
 
@@ -782,10 +786,16 @@ function printFullTree(){
     <div class="poster-toolbar">
       <button type="button" class="poster-print" id="posterPrint">🖨 Print / Save PDF</button>
       <button type="button" id="posterClose">✕ Close</button>
+      <div class="poster-zoom">
+        <button type="button" id="posterZoomOut" title="Zoom out">−</button>
+        <span class="poster-zoom-pct" id="posterZoomPct">100%</span>
+        <button type="button" id="posterZoomIn" title="Zoom in">+</button>
+        <button type="button" id="posterZoomFit" title="Fit to screen">Fit</button>
+      </div>
       <span class="poster-toolbar-hint">Print → Save as PDF → print shop at 3m × 2m</span>
     </div>
-    <div class="poster-scroll">
-      <div class="poster-wrap">
+    <div class="poster-scroll" id="posterScroll">
+      <div class="poster-wrap" id="posterWrap">
         <div class="poster-brand">TAYI FAMILY TREE</div>
         <h1 class="poster-title">${heading}</h1>
         <div class="poster-tree pt-tree">${ptNodeHtml(root,people)}</div>
@@ -793,11 +803,60 @@ function printFullTree(){
     </div>
   `;
   document.body.appendChild(overlay);
-  el('posterClose').addEventListener('click',()=>overlay.remove());
+
+  const wrap=el('posterWrap'),scroll=el('posterScroll'),pct=el('posterZoomPct');
+  const tree=overlay.querySelector('.poster-tree');
+  let zoom=1;
+  const applyZoom=z=>{
+    zoom=Math.max(0.1,Math.min(3,z));
+    wrap.style.zoom=zoom;
+    pct.textContent=Math.round(zoom*100)+'%';
+  };
+  const fit=()=>{
+    // Scale so the full poster width fits the scroll area (minus padding).
+    const avail=scroll.clientWidth-48;
+    const natural=wrap.offsetWidth/zoom; // unscaled width
+    applyZoom(natural>0?avail/natural:1);
+  };
+
+  // Auto-fit the tree to the 3m × 2m page right before printing, then restore.
+  const MM=3.779528; // CSS px per mm at 96dpi
+  const PAGE_W=3000*MM,PAGE_H=2000*MM;
+  const PAD_X=80*MM*2,PAD_TOP=60*MM,PAD_BOT=40*MM;
+  const TITLE_H=95*MM; // brand + title + margins (18+12+30+30+misc mm)
+  const beforePrint=()=>{
+    wrap.style.zoom=1;            // print CSS already forces this, keep consistent
+    tree.style.zoom=1;
+    const tw=tree.scrollWidth,th=tree.scrollHeight;
+    if(tw>0&&th>0){
+      const z=Math.min((PAGE_W-PAD_X)/tw,(PAGE_H-PAD_TOP-PAD_BOT-TITLE_H)/th);
+      tree.style.zoom=z;
+    }
+  };
+  const afterPrint=()=>{
+    tree.style.zoom='';
+    fit(); // restore the on-screen fit
+  };
+  window.addEventListener('beforeprint',beforePrint);
+  window.addEventListener('afterprint',afterPrint);
+
+  const closeOverlay=()=>{
+    window.removeEventListener('beforeprint',beforePrint);
+    window.removeEventListener('afterprint',afterPrint);
+    overlay.remove();
+  };
+
+  el('posterZoomOut').addEventListener('click',()=>applyZoom(zoom-0.1));
+  el('posterZoomIn').addEventListener('click',()=>applyZoom(zoom+0.1));
+  el('posterZoomFit').addEventListener('click',fit);
+  el('posterClose').addEventListener('click',closeOverlay);
   el('posterPrint').addEventListener('click',()=>window.print());
   document.addEventListener('keydown',function escClose(ev){
-    if(ev.key==='Escape'){overlay.remove();document.removeEventListener('keydown',escClose);}
+    if(ev.key==='Escape'){closeOverlay();document.removeEventListener('keydown',escClose);}
   });
+
+  // Default to fit-to-width so the whole tree is visible immediately.
+  fit();
 }
 
 // ── Expand / Collapse ─────────────────────────────────────────────────────────
