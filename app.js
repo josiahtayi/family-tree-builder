@@ -701,11 +701,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 `;
 
 function ptOpenWindow(title,body,extraCss){
-  const html=`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><style>${PT_CSS}${extraCss||''}</style></head><body>${body}</body></html>`;
-  const blob=new Blob([html],{type:'text/html'});
-  const url=URL.createObjectURL(blob);
-  const win=window.open(url,'_blank');
+  const win=window.open('','_blank');
   if(!win){toast('Allow pop-ups to use Print','err');return null;}
+  try{
+    const doc=win.document;
+    doc.open();
+    doc.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><style>${PT_CSS}${extraCss||''}</style></head><body>${body}</body></html>`);
+    doc.close();
+  }catch(e){
+    console.error('Write error:',e);
+    toast('Error writing to popup','err');
+  }
   return win;
 }
 
@@ -736,8 +742,15 @@ function printFullTree(){
     console.log('Collected '+people.length+' people');
     const heading=esc(root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree');
     console.log('Generating tree HTML...');
-    const treeHtml=ptNodeHtml(root,people);
-    console.log('Tree HTML length: '+treeHtml.length);
+    let treeHtml;
+    try{
+      treeHtml=ptNodeHtml(root,people);
+      console.log('Tree HTML generated, length: '+treeHtml.length);
+    }catch(te){
+      console.error('ptNodeHtml error:',te);
+      toast('Error generating tree: '+te.message,'err');
+      return;
+    }
     const body=`
       <div class="poster-wrap">
         <div class="poster-brand">TAYI FAMILY TREE</div>
@@ -781,8 +794,6 @@ function printFullTree(){
     const win=ptOpenWindow('Family Tree — Poster (3m × 2m)',body,css);
     console.log('ptOpenWindow returned: '+(win?'success':'null'));
     if(win){
-      console.log('Window opened, writing content...');
-      win.document.write('<script>window.onload=function(){document.querySelector(".pt-hint").style.display="block";}<\/script>');
       console.log('Poster window ready');
     }
   }catch(e){
