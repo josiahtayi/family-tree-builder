@@ -567,7 +567,7 @@ async function restorePhotos(e){
           batch.update(personRef(p.id),updates);
           batchSize++;
           saved++;
-          if(batchSize===500){
+          if(batchSize===20){
             await batch.commit();
             batch=db.batch();
             batchSize=0;
