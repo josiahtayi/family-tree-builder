@@ -658,15 +658,24 @@ function ptPersonHtml(p){
   return`<div class="pt-person${p.deceased?' dec':''}">${ptAv(p.name,p.photo,p.photoHD,pos)}<div class="pt-nm">${esc(p.name)}${p.deceased?' †':''}</div></div>`;
 }
 
-function ptNodeHtml(p,people){
+function ptNodeHtml(p,people,depth=0){
   const kids=people.filter(x=>x.parentId===p.id);
   let h=`<div class="pt-unit"><div class="pt-couple">${ptPersonHtml(p)}`;
   if(p.spouse)h+=`<div class="pt-amp">&amp;</div>${ptPersonHtml(p.spouse)}`;
   h+=`</div>`;
   if(kids.length){
-    h+=`<div class="pt-down"></div><div class="pt-row">`;
-    kids.forEach(k=>h+=`<div class="pt-col">${ptNodeHtml(k,people)}</div>`);
-    h+=`</div>`;
+    const allLeaves=kids.every(k=>!people.some(x=>x.parentId===k.id));
+    const stagger=depth>=1&&allLeaves&&kids.length>=3;
+    const col=k=>`<div class="pt-col">${ptNodeHtml(k,people,depth+1)}</div>`;
+    const rowOf=(arr)=>`<div class="pt-row${stagger?' pt-row-stagger':''}">${arr.map(col).join('')}</div>`;
+    // Wide leaf groups: stack into two tiers (linked by a connector) so the tree
+    // gets narrower and the photos can be scaled up bigger.
+    if(stagger&&kids.length>=8){
+      const per=Math.ceil(kids.length/2);
+      h+=`<div class="pt-down"></div><div class="pt-tiers">${rowOf(kids.slice(0,per))}<div class="pt-down"></div>${rowOf(kids.slice(per))}</div>`;
+    }else{
+      h+=`<div class="pt-down"></div>${rowOf(kids)}`;
+    }
   }
   h+=`</div>`;
   return h;
@@ -689,14 +698,21 @@ const PT_NODE_CSS=`
 .pt-ini{background:#6b4f3a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:30px;}
 .pt-nm{font-size:11px;font-weight:600;text-align:center;max-width:96px;line-height:1.25;}
 .pt-amp{font-size:11px;color:#9a9388;align-self:center;padding:0 1px;}
-.pt-down{width:0;height:16px;border-left:2px solid #b0a090;margin:0 auto;}
+.pt-down{width:0;height:36px;border-left:2px solid #b0a090;margin:0 auto;}
 .pt-row{display:flex;align-items:flex-start;justify-content:center;}
-.pt-col{display:flex;flex-direction:column;align-items:center;position:relative;padding:16px 3px 0;}
+.pt-col{display:flex;flex-direction:column;align-items:center;position:relative;padding:36px 3px 0;}
 .pt-col::before{content:'';position:absolute;top:0;left:0;right:0;border-top:2px solid #b0a090;}
 .pt-col:first-child::before{left:50%;}
 .pt-col:last-child::before{right:50%;}
 .pt-col:first-child:last-child::before{display:none;}
-.pt-col::after{content:'';position:absolute;top:0;left:50%;width:0;height:16px;border-left:2px solid #b0a090;transform:translateX(-1px);}
+.pt-col::after{content:'';position:absolute;top:0;left:50%;width:0;height:36px;border-left:2px solid #b0a090;transform:translateX(-1px);}
+/* Staggered leaf rows: drop every other node and lengthen its connector stub so
+   the horizontal line stays straight and adjacent names don't collide. */
+.pt-row-stagger>.pt-col{padding-left:2px;padding-right:2px;}
+.pt-row-stagger>.pt-col:nth-child(even)>.pt-unit{margin-top:120px;}
+.pt-row-stagger>.pt-col:nth-child(even)::after{height:156px;}
+/* Wide groups split into two stacked tiers to narrow the tree. */
+.pt-tiers{display:flex;flex-direction:column;align-items:center;}
 `;
 
 const PT_CSS=`
@@ -756,6 +772,8 @@ const POSTER_CSS=PT_NODE_CSS+`
 
 // Print page-size presets (landscape, millimetres).
 const POSTER_SIZES={
+  '3000x1000':{w:3000,h:1000,label:'3m × 1m'},
+  '3000x1500':{w:3000,h:1500,label:'3m × 1.5m'},
   '3000x2000':{w:3000,h:2000,label:'3m × 2m'},
   '1189x841':{w:1189,h:841,label:'A0'},
   '841x594':{w:841,h:594,label:'A1'},
@@ -785,9 +803,24 @@ function posterPrintCSS(wMM,hMM,treeZoom){
 }`;
 }
 
+// Load an external script once (used to pull in html2canvas on demand).
+function loadScript(src){
+  return new Promise((resolve,reject)=>{
+    if(window.html2canvas){resolve();return;}
+    const existing=document.querySelector(`script[data-src="${src}"]`);
+    if(existing){existing.addEventListener('load',()=>resolve());existing.addEventListener('error',()=>reject(new Error('script load failed')));return;}
+    const s=document.createElement('script');
+    s.src=src;s.dataset.src=src;
+    s.onload=()=>resolve();
+    s.onerror=()=>reject(new Error('script load failed — check your internet connection'));
+    document.head.appendChild(s);
+  });
+}
+
 function printFullTree(){
   const root=roots()[0];
   if(!root){toast('No family data to print','err');return;}
+  const branches=childrenOf(root.id);
   const people=ptCollect(root.id,99);
   const heading=esc(root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree');
 
@@ -815,6 +848,12 @@ function printFullTree(){
       <button type="button" class="poster-print" id="posterPrint">🖨 Print / Save PDF</button>
       <button type="button" id="posterPng">🖼 Download PNG</button>
       <button type="button" id="posterClose">✕ Close</button>
+      <label class="poster-size-wrap">Show
+        <select id="posterBranch">
+          <option value="all">Whole family</option>
+          ${branches.map(b=>`<option value="${b.id}">${esc(b.name)}${b.spouse?' &amp; '+esc(b.spouse.name):''}'s branch</option>`).join('')}
+        </select>
+      </label>
       <label class="poster-size-wrap">Size
         <select id="posterSize">
           <option value="auto3000">Auto — 3m wide</option>
@@ -822,6 +861,9 @@ function printFullTree(){
           <option value="auto5000">Auto — 5m wide</option>
           <option value="auto6000">Auto — 6m wide</option>
           <option value="auto8000">Auto — 8m wide</option>
+          <option value="auto9000">Auto — 9m wide (≈13cm photos)</option>
+          <option value="auto10000">Auto — 10m wide</option>
+          <option value="auto12000">Auto — 12m wide</option>
           ${Object.entries(POSTER_SIZES).map(([k,v])=>`<option value="${k}">${v.label} (fixed)</option>`).join('')}
         </select>
       </label>
@@ -837,8 +879,8 @@ function printFullTree(){
     <div class="poster-scroll" id="posterScroll">
       <div class="poster-wrap" id="posterWrap">
         <div class="poster-brand">TAYI FAMILY TREE</div>
-        <h1 class="poster-title">${heading}</h1>
-        <div class="poster-tree pt-tree">${ptNodeHtml(root,people)}</div>
+        <h1 class="poster-title" id="posterTitle">${heading}</h1>
+        <div class="poster-tree pt-tree" id="posterTree">${ptNodeHtml(root,people)}</div>
       </div>
     </div>
   `;
@@ -859,7 +901,7 @@ function printFullTree(){
     applyZoom(natural>0?avail/natural:1);
   };
 
-  // Measure the tree's natural pixel size once (used to compute print scale).
+  // Measure the tree's natural pixel size (used to compute print scale).
   const MM=3.779528; // CSS px per mm at 96dpi
   const measureTree=()=>{
     const pz=tree.style.zoom,wz=wrap.style.zoom;
@@ -868,11 +910,12 @@ function printFullTree(){
     tree.style.zoom=pz;wrap.style.zoom=wz;
     return{w,h};
   };
-  const treeNat=measureTree();
+  let treeNat=measureTree();
 
   // Currently selected print size. applySize computes the page dimensions and
   // bakes the tree zoom directly into the print CSS so it always applies.
   let pageW=3000,pageH=2000,curTreeZoom=1;
+  let headingPlain=root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree';
   // Natural avatar diameter in px (from .pt-av) — used to report print photo size.
   const avPx=parseFloat(getComputedStyle(tree.querySelector('.pt-av')||tree).width)||96;
   const applySize=key=>{
@@ -901,74 +944,80 @@ function printFullTree(){
 
   const closeOverlay=()=>overlay.remove();
 
-  // Export the poster as a single high-resolution PNG. This bypasses all
-  // printer-driver page-size limits — the print shop prints the image at any
-  // physical size. Renders the tree via an SVG <foreignObject> to a canvas.
-  const headingPlain=root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree';
+  // Export the poster as a single high-resolution PNG using html2canvas, which
+  // rasterizes the DOM directly. (An SVG <foreignObject> taints the canvas in
+  // Chrome/Edge and can't be exported, so we can't use that approach.)
   const downloadPNG=async()=>{
     const btn=el('posterPng');
     btn.disabled=true;btn.textContent='Rendering…';
+    let container;
     try{
-      const targetW=Math.min(Math.round(pageW*MM),14000); // cap to canvas limits
-      const rs=targetW/(pageW*MM);                          // render scale vs print px
-      const W=targetW,H=Math.round(W*pageH/pageW);
-      const padTop=pageH*0.03*MM*rs,padSide=pageW*0.0267*MM*rs,padBot=pageH*0.02*MM*rs;
-      const brandF=pageH*0.009*MM*rs,brandMB=pageH*0.006*MM*rs,brandLS=pageH*0.004*MM*rs;
-      const titleF=pageH*0.015*MM*rs,titleMB=pageH*0.015*MM*rs;
-
-      // Build the poster as a real DOM tree, then serialize to valid XML so void
-      // elements like <img> are self-closed (required inside foreignObject).
-      const rootDiv=document.createElement('div');
-      rootDiv.setAttribute('xmlns','http://www.w3.org/1999/xhtml');
-      rootDiv.style.cssText=`width:${W}px;height:${H}px;box-sizing:border-box;background:#fffdf9;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:${padTop}px ${padSide}px ${padBot}px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;`;
-      const styleEl=document.createElement('style');styleEl.textContent=PT_NODE_CSS;rootDiv.appendChild(styleEl);
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+      const tw=treeNat.w||1;
+      // Build an off-screen poster at the tree's natural scale; proportions are
+      // based on the tree width so the title/padding look balanced.
+      const pad=Math.round(tw*0.02);
+      const brandF=Math.round(tw*0.011),brandMB=Math.round(tw*0.006),brandLS=Math.max(1,Math.round(tw*0.005));
+      const titleF=Math.round(tw*0.016),titleMB=Math.round(tw*0.014);
+      container=document.createElement('div');
+      container.style.cssText=`position:fixed;left:-99999px;top:0;width:${tw+pad*2}px;box-sizing:border-box;background:#fffdf9;display:flex;flex-direction:column;align-items:center;padding:${pad}px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;`;
+      const styleEl=document.createElement('style');styleEl.textContent=PT_NODE_CSS;container.appendChild(styleEl);
       const brandEl=document.createElement('div');
       brandEl.style.cssText=`font-size:${brandF}px;font-weight:900;letter-spacing:${brandLS}px;color:#8B6B3D;opacity:.5;text-transform:uppercase;margin-bottom:${brandMB}px;`;
-      brandEl.textContent='TAYI FAMILY TREE';rootDiv.appendChild(brandEl);
+      brandEl.textContent='TAYI FAMILY TREE';container.appendChild(brandEl);
       const titleEl=document.createElement('div');
       titleEl.style.cssText=`font-size:${titleF}px;font-weight:700;color:#3a2e24;margin-bottom:${titleMB}px;text-align:center;`;
-      titleEl.textContent=headingPlain;rootDiv.appendChild(titleEl);
+      titleEl.textContent=headingPlain;container.appendChild(titleEl);
       const treeClone=tree.cloneNode(true);
-      treeClone.style.zoom=curTreeZoom*rs;treeClone.style.transformOrigin='top center';
-      rootDiv.appendChild(treeClone);
+      treeClone.style.zoom='';treeClone.style.transform='';
+      container.appendChild(treeClone);
+      document.body.appendChild(container);
 
-      const xml=new XMLSerializer().serializeToString(rootDiv);
-      const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><foreignObject x="0" y="0" width="${W}" height="${H}">${xml}</foreignObject></svg>`;
-      const svgUrl=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
+      const containerW=container.offsetWidth;
+      // Target ~150 DPI at the selected physical width, capped to canvas limits.
+      const targetPx=Math.min(Math.round(pageW/25.4*150),14000);
+      const scale=Math.max(1,targetPx/containerW);
+      const canvas=await html2canvas(container,{backgroundColor:'#fffdf9',scale,useCORS:true,logging:false});
+      container.remove();container=null;
+
       await new Promise((resolve,reject)=>{
-        const img=new Image();
-        img.onload=()=>{
-          try{
-            const canvas=document.createElement('canvas');
-            canvas.width=W;canvas.height=H;
-            const ctx=canvas.getContext('2d');
-            ctx.fillStyle='#fffdf9';ctx.fillRect(0,0,W,H);
-            ctx.drawImage(img,0,0);
-            URL.revokeObjectURL(svgUrl);
-            canvas.toBlob(b=>{
-              if(!b){reject(new Error('canvas export failed'));return;}
-              const a=document.createElement('a');
-              a.href=URL.createObjectURL(b);
-              a.download=`family-poster-${(pageW/1000).toString().replace('.','_')}m.png`;
-              document.body.appendChild(a);a.click();a.remove();
-              setTimeout(()=>URL.revokeObjectURL(a.href),2000);
-              resolve();
-            },'image/png');
-          }catch(err){reject(err);}
-        };
-        img.onerror=()=>{URL.revokeObjectURL(svgUrl);reject(new Error('image render failed'));};
-        img.src=svgUrl;
+        canvas.toBlob(b=>{
+          if(!b){reject(new Error('toBlob returned null'));return;}
+          const a=document.createElement('a');
+          a.href=URL.createObjectURL(b);
+          a.download=`family-poster-${(pageW/1000).toString().replace('.','_')}m.png`;
+          document.body.appendChild(a);a.click();a.remove();
+          setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+          resolve();
+        },'image/png');
       });
-      toast(`Saved PNG — ${W}×${H}px`);
+      toast(`Saved PNG — ${canvas.width}×${canvas.height}px`);
     }catch(e){
       console.error('PNG export error:',e);
       toast('PNG export failed: '+e.message,'err');
     }finally{
+      if(container)container.remove();
       btn.disabled=false;btn.textContent='🖼 Download PNG';
     }
   };
 
-  el('posterSize').addEventListener('change',e=>applySize(e.target.value));
+  // Re-render the poster for a chosen branch (or the whole family). Fewer people
+  // per poster → bigger photos at the same width.
+  const renderBranch=id=>{
+    const node=id==='all'?root:byId(id);
+    if(!node)return;
+    const ppl=ptCollect(node.id,99);
+    tree.innerHTML=ptNodeHtml(node,ppl);
+    const suffix=id==='all'?' — Full Family Tree':' — Family Branch';
+    headingPlain=node.name+(node.spouse?` & ${node.spouse.name}`:'')+suffix;
+    el('posterTitle').textContent=headingPlain;
+    treeNat=measureTree();
+    applySize(el('posterSize').value);
+    fit();
+  };
+
+  el('posterBranch').addEventListener('change',e=>renderBranch(e.target.value));
+  el('posterSize').addEventListener('change',e=>{applySize(e.target.value);fit();});
   el('posterZoomOut').addEventListener('click',()=>applyZoom(zoom-0.1));
   el('posterZoomIn').addEventListener('click',()=>applyZoom(zoom+0.1));
   el('posterZoomFit').addEventListener('click',fit);
@@ -979,8 +1028,9 @@ function printFullTree(){
     if(ev.key==='Escape'){closeOverlay();document.removeEventListener('keydown',escClose);}
   });
 
-  // Default: Auto 3m wide (page matches tree shape) + fit-to-width on screen.
-  applySize('auto3000');
+  // Default: 3m × 2m fixed page + fit-to-width on screen.
+  el('posterSize').value='3000x2000';
+  applySize('3000x2000');
   fit();
 }
 
