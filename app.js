@@ -765,30 +765,37 @@ function printFullTree(){
     console.log('Body HTML length: '+body.length);
     const css=`
       @page{size:3000mm 2000mm;margin:0;}
-      html,body{width:3000mm;height:2000mm;margin:0;padding:0;overflow:hidden;}
+      html,body{margin:0;padding:0;background:#fff;}
       .poster-wrap{
-        width:3000mm;height:2000mm;
-        padding:60mm 80mm 40mm;
+        width:100%;
+        padding:40px 60px;
         display:flex;flex-direction:column;align-items:center;
         background:#fffdf9;
-        overflow:hidden;
       }
       .poster-brand{
-        font-size:18mm;font-weight:900;letter-spacing:8mm;
+        font-size:28px;font-weight:900;letter-spacing:8px;
         color:#8B6B3D;opacity:.5;text-transform:uppercase;
-        margin-bottom:12mm;
+        margin-bottom:12px;
       }
       .poster-title{
-        font-size:30mm;font-weight:700;color:#3a2e24;
-        margin-bottom:30mm;letter-spacing:1mm;text-align:center;
+        font-size:32px;font-weight:700;color:#3a2e24;
+        margin-bottom:30px;letter-spacing:1px;text-align:center;
       }
-      .poster-tree{zoom:4.5;transform-origin:top center;flex-shrink:0;}
+      .poster-tree{flex-shrink:0;}
       .pt-hint{
-        position:fixed;bottom:0;left:0;right:0;
         background:#f5f0e8;padding:12px 20px;font-size:13px;
         color:#5a4a3a;text-align:center;border-top:1px solid #d4c5b0;
+        margin-top:40px;
       }
-      @media print{.pt-hint{display:none;}}
+      @media print{
+        @page{size:3000mm 2000mm;margin:0;}
+        html,body{width:3000mm;height:2000mm;}
+        .poster-wrap{width:3000mm;height:2000mm;padding:60mm 80mm 40mm;}
+        .poster-brand{font-size:18mm;}
+        .poster-title{font-size:30mm;}
+        .poster-tree{zoom:4.5;transform-origin:top center;}
+        .pt-hint{display:none;}
+      }
     `;
     console.log('Opening window...');
     const win=ptOpenWindow('Family Tree — Poster (3m × 2m)',body,css);
