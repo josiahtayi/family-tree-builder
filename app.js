@@ -648,7 +648,7 @@ function ptCollect(rootId,maxDepth){
 
 function ptAv(name,photo,photoHD,pos){
   const src=photoHD||photo;
-  const style=pos?` style="object-position:${pos.x}% ${pos.y}%"`:'';
+  const style=pos&&pos.x&&pos.y?` style="object-position:${pos.x}% ${pos.y}%"`:'';
   if(src)return`<img class="pt-av" src="${src}" alt="${esc(name)}"${style}>`;
   return`<div class="pt-av pt-ini">${esc(initials(name))}</div>`;
 }
@@ -735,9 +735,13 @@ function printFullTree(){
   const root=roots()[0];
   if(!root){toast('No family data to print','err');return;}
   try{
+    console.log('Starting poster generation...');
     const people=ptCollect(root.id,99);
+    console.log('Collected '+people.length+' people');
     const heading=esc(root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree');
+    console.log('Generating tree HTML...');
     const treeHtml=ptNodeHtml(root,people);
+    console.log('Tree HTML length: '+treeHtml.length);
     const body=`
       <div class="poster-wrap">
         <div class="poster-brand">TAYI FAMILY TREE</div>
@@ -776,8 +780,10 @@ function printFullTree(){
       }
       @media print{.pt-hint{display:none;}}
     `;
+    console.log('Opening window...');
     const win=ptOpenWindow('Family Tree — Poster (3m × 2m)',body,css);
     if(win){
+      console.log('Window opened, writing content...');
       win.document.write('<script>window.onload=function(){document.querySelector(".pt-hint").style.display="block";}<\/script>');
     }
   }catch(e){
