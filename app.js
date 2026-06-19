@@ -553,8 +553,8 @@ async function restorePhotos(e){
       if(!photoCount){toast('No photos found in backup','err');e.target.value='';return;}
       if(!confirm(`Restore ${photoCount} people's photos from backup?\n\nThis will update photos in the database.`)){e.target.value='';return;}
       showSaving();
-      let saved=0,failed=0;
-      const batch=db.batch();
+      let saved=0;
+      let batch=db.batch();
       let batchSize=0;
       for(const p of data){
         if(!p.id)continue;
@@ -569,6 +569,7 @@ async function restorePhotos(e){
           saved++;
           if(batchSize===500){
             await batch.commit();
+            batch=db.batch();
             batchSize=0;
           }
         }
