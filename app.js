@@ -27,6 +27,8 @@ function applyAuthState(){
   editEls.forEach(id=>{const e=el(id);if(e)e.hidden=!isEditor||e._forceHidden;});
   const importWrap=el('importWrap');
   if(importWrap)importWrap.hidden=!isSuperAdmin;
+  const restoreWrap=el('restoreWrap');
+  if(restoreWrap)restoreWrap.hidden=!isSuperAdmin;
   el('eName').readOnly=!isEditor;
   el('eSpouse').readOnly=!isEditor;
   el('eDeceased').disabled=!isEditor;
@@ -540,6 +542,52 @@ function backupPhotos(){
   toast(`Backup saved — ${count} people with photos`);
 }
 
+async function restorePhotos(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=async ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!Array.isArray(data))throw new Error('Invalid backup format');
+      const photoCount=data.filter(p=>p.photo||p.photoHD||p.spouse?.photo||p.spouse?.photoHD).length;
+      if(!photoCount){toast('No photos found in backup','err');e.target.value='';return;}
+      if(!confirm(`Restore ${photoCount} people's photos from backup?\n\nThis will update photos in the database.`)){e.target.value='';return;}
+      showSaving();
+      let saved=0,failed=0;
+      const batch=db.batch();
+      let batchSize=0;
+      for(const p of data){
+        if(!p.id)continue;
+        const updates={};
+        if(p.photo)updates.photo=p.photo;
+        if(p.photoHD)updates.photoHD=p.photoHD;
+        if(p.spouse?.photo)updates['spouse.photo']=p.spouse.photo;
+        if(p.spouse?.photoHD)updates['spouse.photoHD']=p.spouse.photoHD;
+        if(Object.keys(updates).length>0){
+          batch.update(personRef(p.id),updates);
+          batchSize++;
+          saved++;
+          if(batchSize===500){
+            await batch.commit();
+            batchSize=0;
+          }
+        }
+      }
+      if(batchSize>0)await batch.commit();
+      await loadFamily();
+      showSaved();
+      toast(`Restored photos for ${saved} people`);
+      e.target.value='';
+    }catch(err){
+      console.error('Restore error:',err);
+      showSaveError();
+      toast('Failed to restore photos: '+err.message,'err');
+      e.target.value='';
+    }
+  };
+  r.readAsText(f);
+}
+
 // ── Export / Import ───────────────────────────────────────────────────────────
 
 function exportData(){
@@ -743,6 +791,8 @@ el('eSpousePhotoRemove').addEventListener('click',removeSpousePhoto);
 el('exportBtn').addEventListener('click',exportData);
 el('importBtn').addEventListener('click',()=>el('importFile').click());
 el('backupBtn').addEventListener('click',backupPhotos);
+el('restoreBtn').addEventListener('click',()=>el('restoreFile').click());
+el('restoreFile').addEventListener('change',restorePhotos);
 el('importFile').addEventListener('change',importData);
 el('expandBtn').addEventListener('click',expandAll);
 el('collapseBtn').addEventListener('click',collapseAll);
