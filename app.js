@@ -653,15 +653,15 @@ function ptAv(name,photo,photoHD,pos){
   return`<div class="pt-av pt-ini">${esc(initials(name))}</div>`;
 }
 
-function ptPersonHtml(p,isSpouse){
-  const pos=isSpouse?p.pos:p.photoPos;
+function ptPersonHtml(p){
+  const pos=p.photoPos||p.pos;
   return`<div class="pt-person${p.deceased?' dec':''}">${ptAv(p.name,p.photo,p.photoHD,pos)}<div class="pt-nm">${esc(p.name)}${p.deceased?' †':''}</div></div>`;
 }
 
 function ptNodeHtml(p,people){
   const kids=people.filter(x=>x.parentId===p.id);
-  let h=`<div class="pt-unit"><div class="pt-couple">${ptPersonHtml(p,false)}`;
-  if(p.spouse)h+=`<div class="pt-amp">&amp;</div>${ptPersonHtml(p.spouse,true)}`;
+  let h=`<div class="pt-unit"><div class="pt-couple">${ptPersonHtml(p)}`;
+  if(p.spouse)h+=`<div class="pt-amp">&amp;</div>${ptPersonHtml(p.spouse)}`;
   h+=`</div>`;
   if(kids.length){
     h+=`<div class="pt-down"></div><div class="pt-row">`;
