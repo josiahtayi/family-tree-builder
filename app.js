@@ -753,6 +753,7 @@ function printFullTree(){
         take PDF to print shop and request <strong>3m wide × 2m tall</strong> large-format print.
       </div>
     `;
+    console.log('Body HTML length: '+body.length);
     const css=`
       @page{size:3000mm 2000mm;margin:0;}
       html,body{width:3000mm;height:2000mm;margin:0;padding:0;overflow:hidden;}
@@ -782,13 +783,15 @@ function printFullTree(){
     `;
     console.log('Opening window...');
     const win=ptOpenWindow('Family Tree — Poster (3m × 2m)',body,css);
+    console.log('ptOpenWindow returned: '+(win?'success':'null'));
     if(win){
       console.log('Window opened, writing content...');
       win.document.write('<script>window.onload=function(){document.querySelector(".pt-hint").style.display="block";}<\/script>');
+      console.log('Poster window ready');
     }
   }catch(e){
-    console.error('Poster error:',e);
-    toast('Error generating poster: '+e.message,'err');
+    console.error('Poster error:',e,e.stack);
+    toast('Error: '+e.message,'err');
   }
 }
 
