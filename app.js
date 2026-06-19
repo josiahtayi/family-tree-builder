@@ -740,6 +740,8 @@ const POSTER_CSS=PT_NODE_CSS+`
 .poster-toolbar button:hover{background:#f3eee5;}
 .poster-toolbar .poster-print{background:#6b4f3a;border-color:#6b4f3a;color:#fff;}
 .poster-toolbar .poster-print:hover{background:#553f2e;}
+.poster-size-wrap{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#7a7268;margin-left:6px;padding-left:12px;border-left:1px solid #e0d9cd;}
+.poster-size-wrap select{width:auto;padding:6px 8px;font-size:13px;border:1px solid #d9d2c5;border-radius:8px;background:#fcfbf8;color:#2b2b2b;cursor:pointer;}
 .poster-zoom{display:flex;align-items:center;gap:4px;margin-left:6px;padding-left:12px;border-left:1px solid #e0d9cd;}
 .poster-zoom button{min-width:32px;font-size:15px;line-height:1;padding:6px 8px;}
 .poster-zoom-pct{font-size:12px;font-weight:600;color:#7a7268;min-width:42px;text-align:center;}
@@ -749,20 +751,35 @@ const POSTER_CSS=PT_NODE_CSS+`
 .poster-brand{font-size:22px;font-weight:900;letter-spacing:6px;color:#8B6B3D;opacity:.5;text-transform:uppercase;margin-bottom:10px;}
 .poster-title{font-size:26px;font-weight:700;color:#3a2e24;margin-bottom:24px;letter-spacing:.5px;text-align:center;}
 .poster-tree{flex-shrink:0;}
-@media print{
-  @page{size:3000mm 2000mm;margin:0;}
-  html,body{width:3000mm !important;height:2000mm !important;margin:0 !important;padding:0 !important;overflow:hidden !important;}
+`;
+
+// Print page-size presets (landscape, millimetres).
+const POSTER_SIZES={
+  '3000x2000':{w:3000,h:2000,label:'3m × 2m'},
+  '1189x841':{w:1189,h:841,label:'A0'},
+  '841x594':{w:841,h:594,label:'A1'},
+};
+
+// Build the @media print CSS for a given page size. Paddings and font sizes
+// scale proportionally to the page so every preset is laid out consistently.
+function posterPrintCSS(wMM,hMM){
+  const padSide=Math.round(wMM*0.0267),padTop=Math.round(hMM*0.03),padBot=Math.round(hMM*0.02);
+  const brandF=Math.round(hMM*0.009),brandLS=Math.max(1,Math.round(hMM*0.004)),brandMB=Math.round(hMM*0.006);
+  const titleF=Math.round(hMM*0.015),titleMB=Math.round(hMM*0.015);
+  return`@media print{
+  @page{size:${wMM}mm ${hMM}mm;margin:0;}
+  html,body{width:${wMM}mm !important;height:${hMM}mm !important;margin:0 !important;padding:0 !important;overflow:hidden !important;}
   body>*:not(#posterOverlay){display:none !important;}
-  #posterOverlay{position:static;background:#fff;display:block;width:3000mm;height:2000mm;}
+  #posterOverlay{position:static;background:#fff;display:block;width:${wMM}mm;height:${hMM}mm;}
   #posterOverlay *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .poster-toolbar{display:none !important;}
   .poster-scroll{overflow:visible;padding:0;height:auto;display:block;}
-  .poster-wrap{width:3000mm;height:2000mm;padding:60mm 80mm 40mm;margin:0;box-shadow:none;overflow:hidden;zoom:1 !important;}
-  .poster-brand{font-size:18mm;letter-spacing:8mm;margin-bottom:12mm;}
-  .poster-title{font-size:30mm;margin-bottom:30mm;letter-spacing:1mm;}
+  .poster-wrap{width:${wMM}mm;height:${hMM}mm;padding:${padTop}mm ${padSide}mm ${padBot}mm;margin:0;box-shadow:none;overflow:hidden;zoom:1 !important;justify-content:center;}
+  .poster-brand{font-size:${brandF}mm;letter-spacing:${brandLS}mm;margin-bottom:${brandMB}mm;}
+  .poster-title{font-size:${titleF}mm;margin-bottom:${titleMB}mm;letter-spacing:1mm;}
   .poster-tree{transform-origin:top center;}
+}`;
 }
-`;
 
 function printFullTree(){
   const root=roots()[0];
@@ -770,12 +787,19 @@ function printFullTree(){
   const people=ptCollect(root.id,99);
   const heading=esc(root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree');
 
-  // Inject poster styles into the main document once.
+  // Inject poster screen styles into the main document once.
   if(!document.getElementById('posterStyles')){
     const st=document.createElement('style');
     st.id='posterStyles';
     st.textContent=POSTER_CSS;
     document.head.appendChild(st);
+  }
+  // Separate style element for the (size-dependent) print rules.
+  let printStyle=document.getElementById('posterPrintStyles');
+  if(!printStyle){
+    printStyle=document.createElement('style');
+    printStyle.id='posterPrintStyles';
+    document.head.appendChild(printStyle);
   }
 
   // Remove any previous overlay, then build a fresh one in the current page.
@@ -786,13 +810,19 @@ function printFullTree(){
     <div class="poster-toolbar">
       <button type="button" class="poster-print" id="posterPrint">🖨 Print / Save PDF</button>
       <button type="button" id="posterClose">✕ Close</button>
+      <label class="poster-size-wrap">Size
+        <select id="posterSize">
+          <option value="auto">Auto — fit tree</option>
+          ${Object.entries(POSTER_SIZES).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}
+        </select>
+      </label>
       <div class="poster-zoom">
         <button type="button" id="posterZoomOut" title="Zoom out">−</button>
         <span class="poster-zoom-pct" id="posterZoomPct">100%</span>
         <button type="button" id="posterZoomIn" title="Zoom in">+</button>
         <button type="button" id="posterZoomFit" title="Fit to screen">Fit</button>
       </div>
-      <span class="poster-toolbar-hint">Print → Save as PDF → print shop at 3m × 2m</span>
+      <span class="poster-toolbar-hint">Print → Save as PDF → print shop</span>
     </div>
     <div class="poster-scroll" id="posterScroll">
       <div class="poster-wrap" id="posterWrap">
@@ -819,17 +849,42 @@ function printFullTree(){
     applyZoom(natural>0?avail/natural:1);
   };
 
-  // Auto-fit the tree to the 3m × 2m page right before printing, then restore.
+  // Currently selected print size; drives both the print CSS and the auto-fit.
+  let pageW=3000,pageH=2000;
+  const applySize=key=>{
+    if(key==='auto'){
+      // Derive page height from the tree's natural aspect ratio so the poster
+      // matches the on-screen shape (wide & short) with no wasted vertical space.
+      // Width is fixed at 3000mm; the tree fills the content width, and the page
+      // height is just enough for padding + title + the scaled tree.
+      const prevZoom=tree.style.zoom;
+      tree.style.zoom=1;
+      const tw=tree.scrollWidth,th=tree.scrollHeight;
+      tree.style.zoom=prevZoom;
+      pageW=3000;
+      // posterPrintCSS uses: side pad 2.67% each, top 3% + bottom 2% = 5% vertical
+      // pad, and the title block ~4.8% of height. So tree fills (1-0.098) of height.
+      const treeHmm=th>0&&tw>0 ? (th*pageW*(1-0.0534))/tw : pageW*0.6;
+      pageH=Math.max(400,Math.round(treeHmm/0.902));
+    }else{
+      const s=POSTER_SIZES[key]||POSTER_SIZES['3000x2000'];
+      pageW=s.w;pageH=s.h;
+    }
+    printStyle.textContent=posterPrintCSS(pageW,pageH);
+  };
+
+  // Auto-fit the tree to the selected page right before printing, then restore.
   const MM=3.779528; // CSS px per mm at 96dpi
-  const PAGE_W=3000*MM,PAGE_H=2000*MM;
-  const PAD_X=80*MM*2,PAD_TOP=60*MM,PAD_BOT=40*MM;
-  const TITLE_H=95*MM; // brand + title + margins (18+12+30+30+misc mm)
   const beforePrint=()=>{
     wrap.style.zoom=1;            // print CSS already forces this, keep consistent
     tree.style.zoom=1;
+    const PAGE_W=pageW*MM,PAGE_H=pageH*MM;
+    const PAD_X=Math.round(pageW*0.0267)*MM*2;
+    const PAD_V=(Math.round(pageH*0.03)+Math.round(pageH*0.02))*MM;
+    const TITLE_H=pageH*0.048*MM; // brand + title + their margins
     const tw=tree.scrollWidth,th=tree.scrollHeight;
     if(tw>0&&th>0){
-      const z=Math.min((PAGE_W-PAD_X)/tw,(PAGE_H-PAD_TOP-PAD_BOT-TITLE_H)/th);
+      const z=Math.min((PAGE_W-PAD_X)/tw,(PAGE_H-PAD_V-TITLE_H)/th);
       tree.style.zoom=z;
     }
   };
@@ -846,6 +901,7 @@ function printFullTree(){
     overlay.remove();
   };
 
+  el('posterSize').addEventListener('change',e=>applySize(e.target.value));
   el('posterZoomOut').addEventListener('click',()=>applyZoom(zoom-0.1));
   el('posterZoomIn').addEventListener('click',()=>applyZoom(zoom+0.1));
   el('posterZoomFit').addEventListener('click',fit);
@@ -855,7 +911,8 @@ function printFullTree(){
     if(ev.key==='Escape'){closeOverlay();document.removeEventListener('keydown',escClose);}
   });
 
-  // Default to fit-to-width so the whole tree is visible immediately.
+  // Default: Auto size (page matches tree shape) + fit-to-width on screen.
+  applySize('auto');
   fit();
 }
 
