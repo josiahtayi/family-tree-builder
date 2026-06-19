@@ -703,8 +703,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 function ptOpenWindow(title,body,extraCss){
   const win=window.open('','_blank');
   if(!win){toast('Allow pop-ups to use Print','err');return null;}
-  win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><style>${PT_CSS}${extraCss||''}</style></head><body>${body}</body></html>`);
-  win.document.close();
+  try{
+    win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><style>${PT_CSS}${extraCss||''}</style></head><body>${body}</body></html>`);
+    win.document.close();
+  }catch(e){
+    console.error('Print error:',e);
+    toast('Error generating print: '+e.message,'err');
+  }
   return win;
 }
 
@@ -729,49 +734,55 @@ function printFamilyTrees(){
 function printFullTree(){
   const root=roots()[0];
   if(!root){toast('No family data to print','err');return;}
-  const people=ptCollect(root.id,99);
-  const heading=esc(root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree');
-  const body=`
-    <div class="poster-wrap">
-      <div class="poster-brand">TAYI FAMILY TREE</div>
-      <h1 class="poster-title">${heading}</h1>
-      <div class="poster-tree pt-tree">${ptNodeHtml(root,people)}</div>
-    </div>
-    <div class="pt-hint">
-      <strong>Print instructions:</strong> Press Ctrl+P → Save as PDF →
-      take PDF to print shop and request <strong>3m wide × 2m tall</strong> large-format print.
-    </div>
-  `;
-  const css=`
-    @page{size:3000mm 2000mm;margin:0;}
-    html,body{width:3000mm;height:2000mm;margin:0;padding:0;overflow:hidden;}
-    .poster-wrap{
-      width:3000mm;height:2000mm;
-      padding:60mm 80mm 40mm;
-      display:flex;flex-direction:column;align-items:center;
-      background:#fffdf9;
-      overflow:hidden;
+  try{
+    const people=ptCollect(root.id,99);
+    const heading=esc(root.name+(root.spouse?` & ${root.spouse.name}`:'')+' — Full Family Tree');
+    const treeHtml=ptNodeHtml(root,people);
+    const body=`
+      <div class="poster-wrap">
+        <div class="poster-brand">TAYI FAMILY TREE</div>
+        <h1 class="poster-title">${heading}</h1>
+        <div class="poster-tree pt-tree">${treeHtml}</div>
+      </div>
+      <div class="pt-hint">
+        <strong>Print instructions:</strong> Press Ctrl+P → Save as PDF →
+        take PDF to print shop and request <strong>3m wide × 2m tall</strong> large-format print.
+      </div>
+    `;
+    const css=`
+      @page{size:3000mm 2000mm;margin:0;}
+      html,body{width:3000mm;height:2000mm;margin:0;padding:0;overflow:hidden;}
+      .poster-wrap{
+        width:3000mm;height:2000mm;
+        padding:60mm 80mm 40mm;
+        display:flex;flex-direction:column;align-items:center;
+        background:#fffdf9;
+        overflow:hidden;
+      }
+      .poster-brand{
+        font-size:18mm;font-weight:900;letter-spacing:8mm;
+        color:#8B6B3D;opacity:.5;text-transform:uppercase;
+        margin-bottom:12mm;
+      }
+      .poster-title{
+        font-size:30mm;font-weight:700;color:#3a2e24;
+        margin-bottom:30mm;letter-spacing:1mm;text-align:center;
+      }
+      .poster-tree{zoom:4.5;transform-origin:top center;flex-shrink:0;}
+      .pt-hint{
+        position:fixed;bottom:0;left:0;right:0;
+        background:#f5f0e8;padding:12px 20px;font-size:13px;
+        color:#5a4a3a;text-align:center;border-top:1px solid #d4c5b0;
+      }
+      @media print{.pt-hint{display:none;}}
+    `;
+    const win=ptOpenWindow('Family Tree — Poster (3m × 2m)',body,css);
+    if(win){
+      win.document.write('<script>window.onload=function(){document.querySelector(".pt-hint").style.display="block";}<\/script>');
     }
-    .poster-brand{
-      font-size:18mm;font-weight:900;letter-spacing:8mm;
-      color:#8B6B3D;opacity:.5;text-transform:uppercase;
-      margin-bottom:12mm;
-    }
-    .poster-title{
-      font-size:30mm;font-weight:700;color:#3a2e24;
-      margin-bottom:30mm;letter-spacing:1mm;text-align:center;
-    }
-    .poster-tree{zoom:4.5;transform-origin:top center;flex-shrink:0;}
-    .pt-hint{
-      position:fixed;bottom:0;left:0;right:0;
-      background:#f5f0e8;padding:12px 20px;font-size:13px;
-      color:#5a4a3a;text-align:center;border-top:1px solid #d4c5b0;
-    }
-    @media print{.pt-hint{display:none;}}
-  `;
-  const win=ptOpenWindow('Family Tree — Poster (3m × 2m)',body,css);
-  if(win){
-    win.document.write('<script>window.onload=function(){document.querySelector(".pt-hint").style.display="block";}<\/script>');
+  }catch(e){
+    console.error('Poster error:',e);
+    toast('Error generating poster: '+e.message,'err');
   }
 }
 
