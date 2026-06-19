@@ -701,15 +701,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 `;
 
 function ptOpenWindow(title,body,extraCss){
-  const win=window.open('','_blank');
+  const html=`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><style>${PT_CSS}${extraCss||''}</style></head><body>${body}</body></html>`;
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const win=window.open(url,'_blank');
   if(!win){toast('Allow pop-ups to use Print','err');return null;}
-  try{
-    win.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><style>${PT_CSS}${extraCss||''}</style></head><body>${body}</body></html>`);
-    win.document.close();
-  }catch(e){
-    console.error('Print error:',e);
-    toast('Error generating print: '+e.message,'err');
-  }
   return win;
 }
 
