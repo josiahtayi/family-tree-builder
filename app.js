@@ -648,13 +648,18 @@ function ptCollect(rootId,maxDepth){
 
 function ptAv(name,photo,photoHD,pos){
   const src=photoHD||photo;
-  const style=pos&&pos.x&&pos.y?` style="object-position:${pos.x}% ${pos.y}%"`:'';
+  let style='';
+  if(pos&&typeof pos==='object'&&pos.x!=null&&pos.y!=null){
+    style=` style="object-position:${pos.x}% ${pos.y}%"`;
+  }
   if(src)return`<img class="pt-av" src="${src}" alt="${esc(name)}"${style}>`;
   return`<div class="pt-av pt-ini">${esc(initials(name))}</div>`;
 }
 
 function ptPersonHtml(p){
-  const pos=p.photoPos||p.pos;
+  let pos=null;
+  if(p.photoPos){pos=p.photoPos;}
+  else if(p.pos){pos=p.pos;}
   return`<div class="pt-person${p.deceased?' dec':''}">${ptAv(p.name,p.photo,p.photoHD,pos)}<div class="pt-nm">${esc(p.name)}${p.deceased?' †':''}</div></div>`;
 }
 
